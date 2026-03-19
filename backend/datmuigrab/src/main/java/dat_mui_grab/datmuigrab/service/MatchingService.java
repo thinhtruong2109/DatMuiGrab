@@ -1,21 +1,19 @@
 package dat_mui_grab.datmuigrab.service;
 
-import dat_mui_grab.datmuigrab.entity.Driver;
-import dat_mui_grab.datmuigrab.entity.Ride;
-import dat_mui_grab.datmuigrab.entity.enums.DriverOnlineStatus;
-import dat_mui_grab.datmuigrab.repository.DriverRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import dat_mui_grab.datmuigrab.entity.Driver;
+import dat_mui_grab.datmuigrab.entity.Ride;
+import dat_mui_grab.datmuigrab.repository.DriverRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -38,7 +36,23 @@ public class MatchingService {
         }
 
         List<DriverWithDistance> ranked = rankDrivers(candidates, ride);
-        notifyNextDriver(ranked, ride, 0);
+
+        for (DriverWithDistance dwd : ranked) {
+            Driver driver = dwd.getDriver();
+            boolean locked = redisService.acquireDriverLock(driver.getId().toString());
+            if (!locked) {
+                continue;
+            }
+
+            messagingTemplate.convertAndSend(
+                    "/topic/driver/" + driver.getId() + "/new-ride",
+                    ride.getId().toString()
+            );
+
+            log.info("Da gui yeu cau chuyen {} toi tai xe {}", ride.getId(), driver.getId());
+            redisService.releaseDriverLock(driver.getId().toString());
+            break;
+        }
     }
 
     private List<DriverWithDistance> rankDrivers(List<Driver> drivers, Ride ride) {
@@ -71,28 +85,6 @@ public class MatchingService {
         );
 
         return result;
-    }
-
-    private void notifyNextDriver(List<DriverWithDistance> ranked, Ride ride, int index) {
-        if (index >= ranked.size()) {
-            log.info("Het tai xe de match cho chuyen {}", ride.getId());
-            return;
-        }
-
-        Driver driver = ranked.get(index).getDriver();
-
-        boolean locked = redisService.acquireDriverLock(driver.getId().toString());
-        if (!locked) {
-            notifyNextDriver(ranked, ride, index + 1);
-            return;
-        }
-
-        messagingTemplate.convertAndSend(
-                "/topic/driver/" + driver.getId() + "/new-ride",
-                ride.getId().toString()
-        );
-
-        log.info("Da gui yeu cau chuyen {} toi tai xe {}", ride.getId(), driver.getId());
     }
 
     private double haversine(double lat1, double lng1, double lat2, double lng2) {
