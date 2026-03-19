@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import dat_mui_grab.datmuigrab.service.JwtService;
+import dat_mui_grab.datmuigrab.service.RedisService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final RedisService redisService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -38,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         try {
-            if (jwtService.isTokenValid(token)) {
+            if (jwtService.isTokenValid(token) && !redisService.isTokenBlacklisted(token)) {
                 String userId = jwtService.extractUserId(token);
                 String role   = jwtService.extractRole(token);
 
