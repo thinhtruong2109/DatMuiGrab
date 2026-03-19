@@ -1,16 +1,17 @@
 package dat_mui_grab.datmuigrab.service;
 
-import dat_mui_grab.datmuigrab.entity.Driver;
-import dat_mui_grab.datmuigrab.repository.DriverRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.List;
+import dat_mui_grab.datmuigrab.entity.Driver;
+import dat_mui_grab.datmuigrab.repository.DriverRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -19,7 +20,7 @@ public class QuarterlyReputationJob {
 
     private final DriverRepository driverRepository;
 
-    @Scheduled(cron = "0 0 1 1,4,7,10 *")
+    @Scheduled(cron = "0 0 1 1 1,4,7,10 *")
     @Transactional
     public void addQuarterlyBonus() {
         log.info("Bat dau cong diem thuong hang quy cho tai xe...");
