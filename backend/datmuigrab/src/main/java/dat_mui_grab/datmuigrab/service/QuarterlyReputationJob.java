@@ -2,7 +2,6 @@ package dat_mui_grab.datmuigrab.service;
 
 import dat_mui_grab.datmuigrab.entity.Driver;
 import dat_mui_grab.datmuigrab.repository.DriverRepository;
-import dat_mui_grab.datmuigrab.repository.RideRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

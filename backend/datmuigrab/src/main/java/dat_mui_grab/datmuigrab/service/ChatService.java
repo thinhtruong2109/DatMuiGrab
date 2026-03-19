@@ -10,6 +10,8 @@ import dat_mui_grab.datmuigrab.entity.enums.UserRole;
 import dat_mui_grab.datmuigrab.exception.AppException;
 import dat_mui_grab.datmuigrab.exception.ErrorCode;
 import dat_mui_grab.datmuigrab.repository.ChatMessageRepository;
+import dat_mui_grab.datmuigrab.repository.RideRepository;
+import dat_mui_grab.datmuigrab.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -24,20 +26,22 @@ import java.util.stream.Collectors;
 public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
-    private final RideService rideService;
-    private final UserService userService;
+    private final RideRepository rideRepository;
+    private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     public List<ChatMessageResponse> getMessages(UUID rideId) {
-        return chatMessageRepository.findAllByRideIdOrderBySentAtAsc(rideId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return chatMessageRepository.findAllByRideIdOrderBySentAtAsc(rideId)
+                .stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     @Transactional
     public ChatMessageResponse sendMessage(UUID rideId, UUID senderId, ChatMessageRequest request) {
-        Ride ride = rideService.findById(rideId);
-        User sender = userService.findById(senderId);
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay chuyen di"));
+
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay nguoi dung"));
 
         SenderRole senderRole = sender.getRole() == UserRole.DRIVER
                 ? SenderRole.DRIVER : SenderRole.CUSTOMER;

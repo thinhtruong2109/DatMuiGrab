@@ -2,6 +2,8 @@ package dat_mui_grab.datmuigrab.service;
 
 import dat_mui_grab.datmuigrab.dto.request.LocationRequest;
 import dat_mui_grab.datmuigrab.entity.Driver;
+import dat_mui_grab.datmuigrab.exception.AppException;
+import dat_mui_grab.datmuigrab.exception.ErrorCode;
 import dat_mui_grab.datmuigrab.repository.DriverRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -15,12 +17,12 @@ import java.util.UUID;
 public class LocationService {
 
     private final RedisService redisService;
-    private final DriverService driverService;
     private final DriverRepository driverRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     public void broadcastLocation(UUID driverUserId, LocationRequest request) {
-        Driver driver = driverService.findByUserId(driverUserId);
+        Driver driver = driverRepository.findByUserId(driverUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay tai xe"));
 
         redisService.saveDriverLocation(
                 driver.getId().toString(),

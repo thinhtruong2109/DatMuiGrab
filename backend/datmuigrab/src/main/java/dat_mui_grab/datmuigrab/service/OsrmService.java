@@ -7,6 +7,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -16,6 +17,7 @@ public class OsrmService {
 
     private final WebClient osrmWebClient;
 
+    @SuppressWarnings("unchecked")
     public BigDecimal getDistanceKm(double pickupLat, double pickupLng,
                                     double destLat, double destLng) {
         try {
@@ -24,16 +26,16 @@ public class OsrmService {
                     pickupLng, pickupLat, destLng, destLat
             );
 
-            Map response = osrmWebClient.get()
+            Map<String, Object> response = osrmWebClient.get()
                     .uri(url)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
 
             if (response != null && response.containsKey("routes")) {
-                java.util.List routes = (java.util.List) response.get("routes");
+                List<Map<String, Object>> routes = (List<Map<String, Object>>) response.get("routes");
                 if (!routes.isEmpty()) {
-                    Map route = (Map) routes.get(0);
+                    Map<String, Object> route = routes.get(0);
                     Number distanceMeters = (Number) route.get("distance");
                     double km = distanceMeters.doubleValue() / 1000.0;
                     return BigDecimal.valueOf(km).setScale(3, RoundingMode.HALF_UP);

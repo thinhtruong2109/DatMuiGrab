@@ -12,6 +12,7 @@ import dat_mui_grab.datmuigrab.entity.enums.UserRole;
 import dat_mui_grab.datmuigrab.entity.enums.UserStatus;
 import dat_mui_grab.datmuigrab.exception.AppException;
 import dat_mui_grab.datmuigrab.exception.ErrorCode;
+import dat_mui_grab.datmuigrab.repository.DriverRepository;
 import dat_mui_grab.datmuigrab.repository.ReputationAppealRepository;
 import dat_mui_grab.datmuigrab.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,14 +29,16 @@ import java.util.stream.Collectors;
 public class AppealService {
 
     private final ReputationAppealRepository appealRepository;
-    private final DriverService driverService;
-    private final UserService userService;
+    private final DriverRepository driverRepository;
     private final UserRepository userRepository;
 
     @Transactional
     public AppealResponse createAppeal(UUID requesterId, CreateAppealRequest request) {
-        User requester = userService.findById(requesterId);
-        Driver driver = driverService.findById(request.getDriverId());
+        User requester = userRepository.findById(requesterId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay nguoi dung"));
+
+        Driver driver = driverRepository.findById(request.getDriverId())
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay tai xe"));
 
         AppealedBy appealedBy = requester.getRole() == UserRole.DRIVER
                 ? AppealedBy.DRIVER : AppealedBy.COMPANY;
@@ -52,9 +55,8 @@ public class AppealService {
     }
 
     public List<AppealResponse> getAllAppeals() {
-        return appealRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return appealRepository.findAllByOrderByCreatedAtDesc()
+                .stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     @Transactional
@@ -62,7 +64,8 @@ public class AppealService {
         ReputationAppeal appeal = appealRepository.findById(appealId)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay khang cao"));
 
-        User admin = userService.findById(adminId);
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay admin"));
 
         appeal.setStatus(request.getStatus());
         appeal.setAdminNote(request.getAdminNote());
@@ -70,8 +73,7 @@ public class AppealService {
         appeal.setResolvedAt(LocalDateTime.now());
 
         if (request.getStatus() == AppealStatus.APPROVED) {
-            Driver driver = appeal.getDriver();
-            User driverUser = driver.getUser();
+            User driverUser = appeal.getDriver().getUser();
             driverUser.setStatus(UserStatus.ACTIVE);
             userRepository.save(driverUser);
         }

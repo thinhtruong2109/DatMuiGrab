@@ -12,6 +12,8 @@ import dat_mui_grab.datmuigrab.exception.AppException;
 import dat_mui_grab.datmuigrab.exception.ErrorCode;
 import dat_mui_grab.datmuigrab.repository.DriverRepository;
 import dat_mui_grab.datmuigrab.repository.RatingRepository;
+import dat_mui_grab.datmuigrab.repository.RideRepository;
+import dat_mui_grab.datmuigrab.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,17 +30,19 @@ public class RatingService {
 
     private final RatingRepository ratingRepository;
     private final DriverRepository driverRepository;
-    private final RideService rideService;
-    private final DriverService driverService;
-    private final UserService userService;
+    private final UserRepository userRepository;
+    private final RideRepository rideRepository;
 
     @Transactional
     public RatingResponse createRating(UUID customerId, CreateRatingRequest request) {
-        Ride ride = rideService.findById(request.getRideId());
-        User customer = userService.findById(customerId);
+        Ride ride = rideRepository.findById(request.getRideId())
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay chuyen di"));
+
+        User customer = userRepository.findById(customerId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay nguoi dung"));
 
         if (ride.getStatus() != RideStatus.COMPLETED) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "Chi co the danh gia chuyen da hoan thanh");
+            throw new AppException(ErrorCode.VALIDATION_ERROR, "Chi co the danh gia sau khi chuyen hoan thanh");
         }
 
         if (!ride.getCustomer().getId().equals(customerId)) {
@@ -46,12 +50,12 @@ public class RatingService {
         }
 
         if (ratingRepository.existsByRide(ride)) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "Chuyen nay da duoc danh gia roi");
+            throw new AppException(ErrorCode.VALIDATION_ERROR, "Chuyen di nay da duoc danh gia");
         }
 
         Driver driver = ride.getDriver();
         if (driver == null) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "Chuyen nay khong co tai xe");
+            throw new AppException(ErrorCode.VALIDATION_ERROR, "Chuyen di khong co tai xe");
         }
 
         Rating rating = Rating.builder()
@@ -63,40 +67,35 @@ public class RatingService {
                 .build();
 
         ratingRepository.save(rating);
-
-        updateDriverReputationScore(driver, request.getStars());
+        updateDriverReputationScore(driver);
 
         return mapToResponse(rating);
     }
 
-    private void updateDriverReputationScore(Driver driver, int newStars) {
-        int totalRatings = driver.getTotalRatings();
-        BigDecimal currentScore = driver.getReputationScore();
+    public List<RatingResponse> getByDriver(UUID driverId) {
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay tai xe"));
 
-        BigDecimal newScore;
-        if (currentScore == null || totalRatings == 0) {
-            newScore = BigDecimal.valueOf(newStars);
-        } else {
-            BigDecimal totalPoints = currentScore.multiply(BigDecimal.valueOf(totalRatings));
-            newScore = totalPoints.add(BigDecimal.valueOf(newStars))
-                    .divide(BigDecimal.valueOf(totalRatings + 1), 1, RoundingMode.HALF_UP);
-        }
-
-        driver.setReputationScore(newScore);
-        driver.setTotalRatings(totalRatings + 1);
-
-        if (newScore.compareTo(BigDecimal.valueOf(3.0)) < 0) {
-            driver.getUser().setStatus(UserStatus.SUSPENDED);
-        }
-
-        driverRepository.save(driver);
+        return ratingRepository.findAllByDriver(driver)
+                .stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
-    public List<RatingResponse> getByDriver(UUID driverId) {
-        Driver driver = driverService.findById(driverId);
-        return ratingRepository.findAllByDriver(driver).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    private void updateDriverReputationScore(Driver driver) {
+        Double avgScore = ratingRepository.calculateAverageScoreByDriver(driver);
+
+        if (avgScore != null) {
+            BigDecimal newScore = BigDecimal.valueOf(avgScore)
+                    .setScale(1, RoundingMode.HALF_UP);
+            driver.setReputationScore(newScore);
+            driver.setTotalRatings(driver.getTotalRatings() + 1);
+            driverRepository.save(driver);
+
+            if (newScore.compareTo(BigDecimal.valueOf(3.0)) < 0) {
+                User user = driver.getUser();
+                user.setStatus(UserStatus.SUSPENDED);
+                userRepository.save(user);
+            }
+        }
     }
 
     private RatingResponse mapToResponse(Rating rating) {

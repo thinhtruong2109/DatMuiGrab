@@ -1,17 +1,5 @@
 package dat_mui_grab.datmuigrab.service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.NumberFormat;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import dat_mui_grab.datmuigrab.dto.request.CreateCompanyRequest;
 import dat_mui_grab.datmuigrab.dto.request.SuspendCompanyRequest;
 import dat_mui_grab.datmuigrab.dto.request.UpdateCompanyRequest;
@@ -27,6 +15,17 @@ import dat_mui_grab.datmuigrab.exception.ErrorCode;
 import dat_mui_grab.datmuigrab.repository.CompanyWalletRepository;
 import dat_mui_grab.datmuigrab.repository.TransportCompanyRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -170,7 +169,7 @@ public class CompanyService {
     }
 
     private String formatCurrency(BigDecimal amount) {
-        NumberFormat fmt = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+        NumberFormat fmt = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"));
         return fmt.format(amount) + "d";
     }
 

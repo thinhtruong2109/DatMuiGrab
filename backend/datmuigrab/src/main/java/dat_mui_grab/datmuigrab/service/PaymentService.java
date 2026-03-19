@@ -10,6 +10,8 @@ import dat_mui_grab.datmuigrab.entity.enums.RideStatus;
 import dat_mui_grab.datmuigrab.exception.AppException;
 import dat_mui_grab.datmuigrab.exception.ErrorCode;
 import dat_mui_grab.datmuigrab.repository.PaymentRepository;
+import dat_mui_grab.datmuigrab.repository.RideRepository;
+import dat_mui_grab.datmuigrab.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,13 +23,16 @@ import java.util.UUID;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final RideService rideService;
-    private final UserService userService;
+    private final RideRepository rideRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public PaymentResponse pay(UUID customerId, PaymentRequest request) {
-        Ride ride = rideService.findById(request.getRideId());
-        User customer = userService.findById(customerId);
+        Ride ride = rideRepository.findById(request.getRideId())
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay chuyen di"));
+
+        User customer = userRepository.findById(customerId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay nguoi dung"));
 
         if (ride.getStatus() != RideStatus.COMPLETED) {
             throw new AppException(ErrorCode.VALIDATION_ERROR, "Chuyen di chua hoan thanh");
@@ -50,9 +55,12 @@ public class PaymentService {
     }
 
     public PaymentResponse getByRide(UUID rideId) {
-        Ride ride = rideService.findById(rideId);
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay chuyen di"));
+
         Payment payment = paymentRepository.findByRide(ride)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Chuyen di nay chua duoc thanh toan"));
+
         return mapToResponse(payment);
     }
 
