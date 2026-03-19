@@ -1,0 +1,18 @@
+package dat_mui_grab.datmuigrab.repository;
+
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import dat_mui_grab.datmuigrab.entity.ReputationAppeal;
+import dat_mui_grab.datmuigrab.entity.enums.AppealStatus;
+
+@Repository
+public interface ReputationAppealRepository extends JpaRepository<ReputationAppeal, UUID> {
+
+    List<ReputationAppeal> findAllByOrderByCreatedAtDesc();
+
+    List<ReputationAppeal> findAllByStatus(AppealStatus status);
+}
