@@ -2,20 +2,22 @@ package dat_mui_grab.datmuigrab.service;
 
 import java.time.Duration;
 
+import org.springframework.data.geo.Point;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class RedisService {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String GEO_KEY = "drivers:geo";
 
-    // ── ① OTP ──────────────────────────────────────────────
+    public RedisService(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
+    // ── OTP ────────────────────────────────────────────────
     public void saveOtp(String email, String otp) {
         redisTemplate.opsForValue().set("otp:" + email, otp, Duration.ofMinutes(5));
     }
@@ -29,15 +31,14 @@ public class RedisService {
         redisTemplate.delete("otp:" + email);
     }
 
-    // ── ② Driver location ──────────────────────────────────
+    // ── Driver location ────────────────────────────────────
     public void saveDriverLocation(String driverId, double lat, double lng) {
         redisTemplate.opsForValue().set(
                 "driver:location:" + driverId,
                 lat + "," + lng,
                 Duration.ofSeconds(30)
         );
-        redisTemplate.opsForGeo().add(GEO_KEY,
-                new org.springframework.data.geo.Point(lng, lat), driverId);
+        redisTemplate.opsForGeo().add(GEO_KEY, new Point(lng, lat), driverId);
     }
 
     public String getDriverLocation(String driverId) {
@@ -47,15 +48,10 @@ public class RedisService {
 
     public void removeDriverLocation(String driverId) {
         redisTemplate.delete("driver:location:" + driverId);
-        redisTemplate.opsForGeo().remove(GEO_KEY, driverId);
+        redisTemplate.opsForGeo().remove(GEO_KEY, (Object) driverId);
     }
 
-    public org.springframework.data.redis.connection.RedisGeoCommands.GeoLocation<Object>
-            getNearbyDrivers(double lat, double lng, double radiusKm) {
-        return null; // placeholder, see MatchingService
-    }
-
-    // ── ③ Distributed lock ─────────────────────────────────
+    // ── Distributed lock ───────────────────────────────────
     public boolean acquireDriverLock(String driverId) {
         Boolean acquired = redisTemplate.opsForValue()
                 .setIfAbsent("lock:driver:" + driverId, "locked", Duration.ofSeconds(10));
@@ -66,7 +62,7 @@ public class RedisService {
         redisTemplate.delete("lock:driver:" + driverId);
     }
 
-    // ── ④ Token blacklist ──────────────────────────────────
+    // ── Token blacklist ────────────────────────────────────
     public void blacklistToken(String token, Duration ttl) {
         redisTemplate.opsForValue().set("blacklist:" + token, "revoked", ttl);
     }
@@ -75,7 +71,7 @@ public class RedisService {
         return Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + token));
     }
 
-    // ── ⑤ Driver online status (BUSY flag) ─────────────────
+    // ── Driver online status (BUSY flag) ───────────────────
     public void setDriverBusy(String driverId) {
         redisTemplate.opsForValue().set("driver:status:" + driverId, "BUSY");
     }

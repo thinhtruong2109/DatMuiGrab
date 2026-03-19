@@ -71,7 +71,7 @@ public class MatchingService {
                 double lng = Double.parseDouble(parts[1]);
                 double distance = haversine(pickupLat, pickupLng, lat, lng);
                 result.add(new DriverWithDistance(driver, distance));
-            } catch (Exception e) {
+            } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
                 log.warn("Loi parse vi tri tai xe {}: {}", driver.getId(), e.getMessage());
             }
         }
