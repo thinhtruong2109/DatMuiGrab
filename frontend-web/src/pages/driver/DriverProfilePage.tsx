@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react'
 import { Box, Card, CardContent, TextField, Button, Typography, Avatar, Alert, Chip, Grid, MenuItem } from '@mui/material'
 import StarIcon from '@mui/icons-material/Star'
 import { driverApi } from '@/api/driver.api'
+import { ratingApi } from '@/api/rating.api'
 import { useAuthStore } from '@/store/authStore'
-import type { Driver } from '@/types'
+import type { Driver, Rating } from '@/types'
 import PageHeader from '@/components/common/PageHeader'
+import ChangePasswordCard from '@/components/common/ChangePasswordCard'
+import { formatDate } from '@/utils/format'
 
 export default function DriverProfilePage() {
   const { user } = useAuthStore()
@@ -12,11 +15,13 @@ export default function DriverProfilePage() {
   const [form, setForm] = useState({ vehiclePlate: '', vehicleType: 'Xe máy', vehicleModel: '' })
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [ratings, setRatings] = useState<Rating[]>([])
 
   useEffect(() => {
     driverApi.getMe().then((d) => {
       setDriver(d)
       setForm({ vehiclePlate: d.vehiclePlate || '', vehicleType: d.vehicleType || 'Xe máy', vehicleModel: d.vehicleModel || '' })
+      ratingApi.getByDriver(d.id).then(setRatings).catch(() => setRatings([]))
     })
   }, [])
 
@@ -33,7 +38,7 @@ export default function DriverProfilePage() {
   }
 
   return (
-    <Box p={3} maxWidth={600}>
+    <Box p={3} maxWidth={700} display="flex" flexDirection="column" gap={3}>
       <PageHeader title="Hồ sơ tài xế" />
 
       <Card sx={{ mb: 3 }}>
@@ -90,6 +95,29 @@ export default function DriverProfilePage() {
           </Grid>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent sx={{ p: 3 }}>
+          <Typography fontWeight={700} mb={2}>Đánh giá gần đây</Typography>
+          {ratings.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">Chưa có đánh giá nào</Typography>
+          ) : (
+            <Box display="flex" flexDirection="column" gap={1.5}>
+              {ratings.slice(0, 5).map((rating) => (
+                <Box key={rating.id} p={1.5} border="1px solid" borderColor="divider" borderRadius={2}>
+                  <Box display="flex" justifyContent="space-between" mb={0.5}>
+                    <Typography fontWeight={600}>{rating.stars}★</Typography>
+                    <Typography variant="caption" color="text.secondary">{formatDate(rating.createdAt)}</Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">{rating.comment || 'Không có nhận xét'}</Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      <ChangePasswordCard />
     </Box>
   )
 }

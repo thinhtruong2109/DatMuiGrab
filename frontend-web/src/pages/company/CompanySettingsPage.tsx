@@ -7,25 +7,36 @@ import { companyApi } from '@/api/company.api'
 import { formatCurrency } from '@/utils/format'
 import type { TransportCompany } from '@/types'
 import PageHeader from '@/components/common/PageHeader'
+import ChangePasswordCard from '@/components/common/ChangePasswordCard'
+import { useAuthStore } from '@/store/authStore'
 
 export default function CompanySettingsPage() {
+  const { user } = useAuthStore()
   const [company, setCompany] = useState<TransportCompany | null>(null)
   const [pricePerKm, setPricePerKm] = useState(15000)
   const [driverPercent, setDriverPercent] = useState(75)
   const [description, setDescription] = useState('')
+  const [onboarding, setOnboarding] = useState({
+    companyName: '',
+    licenseNumber: '',
+    address: '',
+    description: '',
+    pricePerKm: 15000,
+    driverRevenuePercent: 75,
+  })
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     companyApi.getAll().then((companies) => {
-      const c = companies[0]
+      const c = companies.find((item) => item.userId === user?.id) || companies[0]
       if (!c) return
       setCompany(c)
       setPricePerKm(c.pricePerKm)
       setDriverPercent(c.driverRevenuePercent)
       setDescription(c.description || '')
     })
-  }, [])
+  }, [user?.id])
 
   const handleUpdatePrice = async () => {
     if (!company) return
@@ -54,14 +65,55 @@ export default function CompanySettingsPage() {
 
   const examplePrice = pricePerKm * 3.5 * 1.05
 
+  const handleCreateCompany = async () => {
+    setLoading(true)
+    try {
+      const created = await companyApi.create(onboarding)
+      setCompany(created)
+      setPricePerKm(created.pricePerKm)
+      setDriverPercent(created.driverRevenuePercent)
+      setDescription(created.description || '')
+      setSuccess('Đã tạo hồ sơ công ty thành công. Vui lòng chờ Admin duyệt.')
+    } catch (err: any) {
+      setSuccess('')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <Box p={3} maxWidth={640}>
+    <Box p={3} maxWidth={760} display="flex" flexDirection="column" gap={3}>
       <PageHeader title="Cài đặt công ty" />
 
       {success && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>{success}</Alert>}
 
+      {!company && (
+        <Card>
+          <CardContent sx={{ p: 3 }}>
+            <Typography fontWeight={700} mb={0.5}>Đăng ký công ty vận tải</Typography>
+            <Typography variant="body2" color="text.secondary" mb={2.5}>
+              Tạo hồ sơ onboarding để Admin phê duyệt kích hoạt.
+            </Typography>
+
+            <Box display="flex" flexDirection="column" gap={2}>
+              <TextField label="Tên công ty" value={onboarding.companyName} onChange={(e) => setOnboarding({ ...onboarding, companyName: e.target.value })} fullWidth />
+              <TextField label="Số giấy phép" value={onboarding.licenseNumber} onChange={(e) => setOnboarding({ ...onboarding, licenseNumber: e.target.value })} fullWidth />
+              <TextField label="Địa chỉ" value={onboarding.address} onChange={(e) => setOnboarding({ ...onboarding, address: e.target.value })} fullWidth />
+              <TextField label="Mô tả" value={onboarding.description} onChange={(e) => setOnboarding({ ...onboarding, description: e.target.value })} fullWidth multiline rows={3} />
+              <TextField label="Giá per km" type="number" value={onboarding.pricePerKm} onChange={(e) => setOnboarding({ ...onboarding, pricePerKm: Number(e.target.value) })} fullWidth />
+              <TextField label="Tỉ lệ tài xế (%)" type="number" value={onboarding.driverRevenuePercent} onChange={(e) => setOnboarding({ ...onboarding, driverRevenuePercent: Number(e.target.value) })} fullWidth />
+              <Box>
+                <Button variant="contained" onClick={handleCreateCompany} disabled={loading}>
+                  {loading ? 'Đang tạo...' : 'Tạo hồ sơ công ty'}
+                </Button>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Price config */}
-      <Card sx={{ mb: 3 }}>
+      {company && <Card sx={{ mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
           <Typography fontWeight={700} mb={0.5}>Giá cước</Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
@@ -90,10 +142,10 @@ export default function CompanySettingsPage() {
             Cập nhật giá
           </Button>
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Revenue split */}
-      <Card sx={{ mb: 3 }}>
+      {company && <Card sx={{ mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
           <Typography fontWeight={700} mb={0.5}>Chia doanh thu</Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
@@ -129,7 +181,9 @@ export default function CompanySettingsPage() {
             Lưu cài đặt
           </Button>
         </CardContent>
-      </Card>
+      </Card>}
+
+      <ChangePasswordCard />
     </Box>
   )
 }

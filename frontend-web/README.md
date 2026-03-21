@@ -23,11 +23,21 @@ npm run dev
 Frontend chạy tại `http://localhost:3000`  
 Backend Spring Boot cần chạy tại `http://localhost:8080`
 
+## Chạy production build
+
+```bash
+npm run build
+npm run preview
+```
+
+Ứng dụng preview tại `http://localhost:4173`
+
 ## Cấu trúc thư mục
 
 ```
 src/
 ├── api/          # Axios API calls (auth, company, driver, ride, ...)
+├── services/     # Service layer dùng bởi UI, tách khỏi HTTP client
 ├── components/
 │   ├── common/   # LoadingScreen, PageHeader, StatCard, EmptyState
 │   └── layout/   # CustomerLayout, DashboardLayout
@@ -44,6 +54,19 @@ src/
 ├── types/        # TypeScript interfaces
 └── utils/        # format currency, date, status labels
 ```
+
+## API coverage (theo tài liệu backend)
+
+- `authService`: register, verify-email, resend-otp, login, refresh-token, logout
+- `userService`: users/me, update profile, change password, admin users list, ban/unban
+- `companyService`: public companies, estimate, create/update company, update price, admin approve/suspend/list
+- `driverService`: driver profile/status/rides, company drivers, admin ban, driver registration flows
+- `rideService`: book ride, ride detail, cancel, status update, customer/company ride lists
+- `paymentService`: pay, payment status by ride, webhook endpoint mapping
+- `ratingService`: create rating, driver ratings
+- `chatService`: chat history by ride + realtime qua WebSocket STOMP
+- `appealService`: create/list/resolve appeal
+- `walletService`: wallet info, bank info update, withdraw, transactions, admin wallet lookup
 
 ## Tính năng theo từng vai trò
 

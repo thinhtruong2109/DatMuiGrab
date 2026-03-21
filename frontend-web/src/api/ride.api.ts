@@ -14,9 +14,9 @@ export const rideApi = {
   updateStatus: (id: string, status: RideStatus) =>
     axiosInstance.put(`/rides/${id}/status`, { status }).then((r) => r.data),
 
-  getMyRides: () =>
-    axiosInstance.get<Ride[]>('/rides/my-rides').then((r) => r.data),
+  getMyRides: (params?: { page?: number; size?: number }) =>
+    axiosInstance.get<Ride[]>('/rides/my-rides', { params }).then((r) => r.data),
 
-  getByCompany: (companyId: string) =>
-    axiosInstance.get<Ride[]>(`/rides/company/${companyId}`).then((r) => r.data),
+  getByCompany: (companyId: string, params?: { page?: number; size?: number }) =>
+    axiosInstance.get<Ride[]>(`/rides/company/${companyId}`, { params }).then((r) => r.data),
 }

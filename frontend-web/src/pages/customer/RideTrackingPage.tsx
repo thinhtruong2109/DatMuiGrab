@@ -16,6 +16,7 @@ import 'leaflet/dist/leaflet.css'
 import { rideApi } from '@/api/ride.api'
 import { ratingApi } from '@/api/rating.api'
 import { paymentApi } from '@/api/payment.api'
+import { chatService } from '@/services'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useChatStore } from '@/store/chatStore'
 import { useRideStore } from '@/store/rideStore'
@@ -57,7 +58,10 @@ export default function RideTrackingPage() {
   // Load ride
   useEffect(() => {
     if (!rideId) return
+    clearMessages()
     rideApi.getById(rideId).then(setRide)
+    chatService.getMessagesByRide(rideId).then(setMessages).catch(() => {})
+    return () => clearMessages()
   }, [rideId])
 
   // WebSocket subscriptions

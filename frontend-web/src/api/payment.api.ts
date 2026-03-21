@@ -7,4 +7,7 @@ export const paymentApi = {
 
   getByRide: (rideId: string) =>
     axiosInstance.get<Payment>(`/payments/ride/${rideId}`).then((r) => r.data),
+
+  webhook: (gateway: string, payload: unknown) =>
+    axiosInstance.post(`/payments/webhook/${gateway}`, payload).then((r) => r.data),
 }

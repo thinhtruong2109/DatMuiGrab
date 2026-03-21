@@ -7,6 +7,7 @@ import { MapContainer, TileLayer, Marker } from 'react-leaflet'
 import SendIcon from '@mui/icons-material/Send'
 import 'leaflet/dist/leaflet.css'
 import { rideApi } from '@/api/ride.api'
+import { chatService } from '@/services'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { useChatStore } from '@/store/chatStore'
@@ -23,7 +24,7 @@ const STATUS_STEPS: Record<string, { next: string; label: string; color: 'primar
 
 export default function DriverRidePage() {
   const { currentRide, setCurrentRide } = useRideStore()
-  const { messages, addMessage } = useChatStore()
+  const { messages, addMessage, setMessages, clearMessages } = useChatStore()
   const { user } = useAuthStore()
   const { coords } = useGeolocation(true)
   const { subscribe, send } = useWebSocket()
@@ -32,8 +33,13 @@ export default function DriverRidePage() {
 
   useEffect(() => {
     if (!currentRide) return
+    clearMessages()
+    chatService.getMessagesByRide(currentRide.id).then(setMessages).catch(() => {})
     const unsub = subscribe(`/topic/ride/${currentRide.id}/chat`, addMessage)
-    return unsub
+    return () => {
+      unsub()
+      clearMessages()
+    }
   }, [currentRide?.id])
 
   // Send location while in ride

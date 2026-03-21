@@ -25,7 +25,7 @@ export default function CompanyDashboard() {
     const load = async () => {
       try {
         const companies = await companyApi.getAll()
-        const myCompany = companies[0]
+        const myCompany = companies.find((company) => company.userId === user?.id) || companies[0]
         if (!myCompany) return
         setCompany(myCompany)
 
@@ -48,7 +48,7 @@ export default function CompanyDashboard() {
       }
     }
     load()
-  }, [])
+  }, [user?.id])
 
   if (loading) return <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
 

@@ -2,8 +2,8 @@ import axiosInstance from './axiosInstance'
 import type { TransportCompany, CompanyEstimate } from '@/types'
 
 export const companyApi = {
-  getAll: () =>
-    axiosInstance.get<TransportCompany[]>('/companies').then((r) => r.data),
+  getAll: (params?: { page?: number; size?: number }) =>
+    axiosInstance.get<TransportCompany[]>('/companies', { params }).then((r) => r.data),
 
   getById: (id: string) =>
     axiosInstance.get<TransportCompany>(`/companies/${id}`).then((r) => r.data),
@@ -25,8 +25,8 @@ export const companyApi = {
     axiosInstance.put(`/companies/${id}/price`, { pricePerKm }).then((r) => r.data),
 
   // Admin
-  getAllAdmin: () =>
-    axiosInstance.get<TransportCompany[]>('/companies/admin/all').then((r) => r.data),
+  getAllAdmin: (params?: { page?: number; size?: number }) =>
+    axiosInstance.get<TransportCompany[]>('/companies/admin/all', { params }).then((r) => r.data),
 
   approve: (id: string) =>
     axiosInstance.put(`/companies/${id}/approve`).then((r) => r.data),

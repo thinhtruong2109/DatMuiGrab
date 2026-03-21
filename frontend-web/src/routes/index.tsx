@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import { useAuthStore } from '@/store/authStore'
+import ProtectedRoute from '@/routes/ProtectedRoute'
 
 // Auth
 import LoginPage from '@/pages/auth/LoginPage'
@@ -21,6 +21,7 @@ import DriverDashboard from '@/pages/driver/DriverDashboard'
 import DriverRidePage from '@/pages/driver/DriverRidePage'
 import DriverRegistrationsPage from '@/pages/driver/DriverRegistrationsPage'
 import DriverProfilePage from '@/pages/driver/DriverProfilePage'
+import DriverAppealsPage from '@/pages/driver/DriverAppealsPage'
 
 // Company pages
 import CompanyDashboard from '@/pages/company/CompanyDashboard'
@@ -35,6 +36,7 @@ import AdminCompaniesPage from '@/pages/admin/AdminCompaniesPage'
 import AdminDriversPage from '@/pages/admin/AdminDriversPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminAppealsPage from '@/pages/admin/AdminAppealsPage'
+import AdminWalletsPage from '@/pages/admin/AdminWalletsPage'
 
 // Driver nav config
 import DashboardIcon from '@mui/icons-material/Dashboard'
@@ -51,6 +53,7 @@ const driverNavItems = [
   { label: 'Tổng quan', path: '/driver', icon: <DashboardIcon fontSize="small" /> },
   { label: 'Chuyến hiện tại', path: '/driver/ride', icon: <DirectionsCarIcon fontSize="small" /> },
   { label: 'Đăng ký công ty', path: '/driver/registrations', icon: <AssignmentIcon fontSize="small" /> },
+  { label: 'Kháng cáo', path: '/driver/appeals', icon: <GavelIcon fontSize="small" /> },
   { label: 'Hồ sơ', path: '/driver/profile', icon: <PersonIcon fontSize="small" /> },
 ]
 
@@ -68,6 +71,7 @@ const adminNavItems = [
   { label: 'Tài xế', path: '/admin/drivers', icon: <DirectionsCarIcon fontSize="small" /> },
   { label: 'Người dùng', path: '/admin/users', icon: <PeopleIcon fontSize="small" /> },
   { label: 'Kháng cáo', path: '/admin/appeals', icon: <GavelIcon fontSize="small" /> },
+  { label: 'Ví công ty', path: '/admin/wallets', icon: <AccountBalanceWalletIcon fontSize="small" /> },
 ]
 
 export const router = createBrowserRouter([
@@ -79,7 +83,11 @@ export const router = createBrowserRouter([
   // Customer
   {
     path: '/customer',
-    element: <CustomerLayout />,
+    element: (
+      <ProtectedRoute roles={['CUSTOMER']}>
+        <CustomerLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <Navigate to="/customer/book" replace /> },
       { path: 'book', element: <BookRidePage /> },
@@ -93,17 +101,20 @@ export const router = createBrowserRouter([
   {
     path: '/driver',
     element: (
-      <DashboardLayout
-        navItems={driverNavItems}
-        title="Tài xế"
-        roleColor="#00A651"
-        roleLabel="Cổng tài xế"
-      />
+      <ProtectedRoute roles={['DRIVER']}>
+        <DashboardLayout
+          navItems={driverNavItems}
+          title="Tài xế"
+          roleColor="#00A651"
+          roleLabel="Cổng tài xế"
+        />
+      </ProtectedRoute>
     ),
     children: [
       { index: true, element: <DriverDashboard /> },
       { path: 'ride', element: <DriverRidePage /> },
       { path: 'registrations', element: <DriverRegistrationsPage /> },
+      { path: 'appeals', element: <DriverAppealsPage /> },
       { path: 'profile', element: <DriverProfilePage /> },
     ],
   },
@@ -112,12 +123,14 @@ export const router = createBrowserRouter([
   {
     path: '/company',
     element: (
-      <DashboardLayout
-        navItems={companyNavItems}
-        title="Công ty vận tải"
-        roleColor="#3B82F6"
-        roleLabel="Cổng công ty"
-      />
+      <ProtectedRoute roles={['TRANSPORT_COMPANY']}>
+        <DashboardLayout
+          navItems={companyNavItems}
+          title="Công ty vận tải"
+          roleColor="#3B82F6"
+          roleLabel="Cổng công ty"
+        />
+      </ProtectedRoute>
     ),
     children: [
       { index: true, element: <CompanyDashboard /> },
@@ -132,12 +145,14 @@ export const router = createBrowserRouter([
   {
     path: '/admin',
     element: (
-      <DashboardLayout
-        navItems={adminNavItems}
-        title="Admin"
-        roleColor="#8B5CF6"
-        roleLabel="Quản trị hệ thống"
-      />
+      <ProtectedRoute roles={['ADMIN']}>
+        <DashboardLayout
+          navItems={adminNavItems}
+          title="Admin"
+          roleColor="#8B5CF6"
+          roleLabel="Quản trị hệ thống"
+        />
+      </ProtectedRoute>
     ),
     children: [
       { index: true, element: <AdminDashboard /> },
@@ -145,6 +160,7 @@ export const router = createBrowserRouter([
       { path: 'drivers', element: <AdminDriversPage /> },
       { path: 'users', element: <AdminUsersPage /> },
       { path: 'appeals', element: <AdminAppealsPage /> },
+      { path: 'wallets', element: <AdminWalletsPage /> },
     ],
   },
 ])

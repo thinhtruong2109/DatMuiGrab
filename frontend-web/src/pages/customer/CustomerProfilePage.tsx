@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, Card, CardContent, TextField, Button, Typography, Avatar, Alert } from '@mui/material'
 import { useAuthStore } from '@/store/authStore'
-import axiosInstance from '@/api/axiosInstance'
+import { userService } from '@/services'
 import PageHeader from '@/components/common/PageHeader'
+import ChangePasswordCard from '@/components/common/ChangePasswordCard'
 
 export default function CustomerProfilePage() {
   const { user, updateUser } = useAuthStore()
@@ -10,11 +11,18 @@ export default function CustomerProfilePage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
+  useEffect(() => {
+    userService.getMe().then((me) => {
+      updateUser(me)
+      setForm({ fullName: me.fullName || '', phoneNumber: me.phoneNumber || '' })
+    }).catch(() => {})
+  }, [])
+
   const handleSave = async () => {
     setLoading(true)
     try {
-      const { data } = await axiosInstance.put('/users/me', form)
-      updateUser(data)
+      const updated = await userService.updateMe(form)
+      updateUser(updated)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } finally {
@@ -23,7 +31,7 @@ export default function CustomerProfilePage() {
   }
 
   return (
-    <Box p={3} maxWidth={500} mx="auto">
+    <Box p={3} maxWidth={560} mx="auto" display="flex" flexDirection="column" gap={3}>
       <PageHeader title="Hồ sơ cá nhân" />
       <Card>
         <CardContent sx={{ p: 3 }}>
@@ -51,6 +59,7 @@ export default function CustomerProfilePage() {
           </Box>
         </CardContent>
       </Card>
+      <ChangePasswordCard />
     </Box>
   )
 }

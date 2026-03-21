@@ -5,6 +5,7 @@ import {
 import FmdGoodIcon from '@mui/icons-material/FmdGood'
 import PlaceIcon from '@mui/icons-material/Place'
 import { rideApi } from '@/api/ride.api'
+import { paymentApi } from '@/api/payment.api'
 import { formatCurrency, formatDate, rideStatusLabel, rideStatusColor } from '@/utils/format'
 import type { Ride } from '@/types'
 import EmptyState from '@/components/common/EmptyState'
@@ -12,10 +13,26 @@ import PageHeader from '@/components/common/PageHeader'
 
 export default function RideHistoryPage() {
   const [rides, setRides] = useState<Ride[]>([])
+  const [paymentStatusMap, setPaymentStatusMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    rideApi.getMyRides().then(setRides).finally(() => setLoading(false))
+    rideApi.getMyRides()
+      .then(async (data) => {
+        setRides(data)
+        const entries = await Promise.all(
+          data.map(async (ride) => {
+            try {
+              const payment = await paymentApi.getByRide(ride.id)
+              return [ride.id, payment.status] as const
+            } catch {
+              return [ride.id, 'N/A'] as const
+            }
+          })
+        )
+        setPaymentStatusMap(Object.fromEntries(entries))
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   return (
@@ -57,9 +74,16 @@ export default function RideHistoryPage() {
                 <Divider sx={{ mb: 1.5 }} />
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">{ride.distanceKm.toFixed(1)} km</Typography>
-                  <Typography fontWeight={700} color="primary.main">
-                    {formatCurrency(ride.finalPrice || ride.estimatedPrice)}
-                  </Typography>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Chip
+                      size="small"
+                      label={`Thanh toán: ${paymentStatusMap[ride.id] || 'N/A'}`}
+                      color={paymentStatusMap[ride.id] === 'SUCCESS' ? 'success' : paymentStatusMap[ride.id] === 'FAILED' ? 'error' : 'default'}
+                    />
+                    <Typography fontWeight={700} color="primary.main">
+                      {formatCurrency(ride.finalPrice || ride.estimatedPrice)}
+                    </Typography>
+                  </Box>
                 </Box>
               </CardContent>
             </Card>

@@ -7,25 +7,31 @@ import {
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
+import GavelIcon from '@mui/icons-material/Gavel'
 import { driverApi } from '@/api/driver.api'
 import { companyApi } from '@/api/company.api'
+import { appealApi } from '@/api/appeal.api'
+import { useAuthStore } from '@/store/authStore'
 import { formatDate } from '@/utils/format'
 import type { Driver, DriverCompanyRegistration, TransportCompany } from '@/types'
 import PageHeader from '@/components/common/PageHeader'
 import EmptyState from '@/components/common/EmptyState'
 
 export default function CompanyDriversPage() {
+  const { user } = useAuthStore()
   const [tab, setTab] = useState(0)
   const [company, setCompany] = useState<TransportCompany | null>(null)
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [pending, setPending] = useState<DriverCompanyRegistration[]>([])
   const [loading, setLoading] = useState(true)
   const [rejectDialog, setRejectDialog] = useState<{ open: boolean; regId: string }>({ open: false, regId: '' })
+  const [appealDialog, setAppealDialog] = useState<{ open: boolean; driverId: string }>({ open: false, driverId: '' })
   const [rejectNote, setRejectNote] = useState('')
+  const [appealReason, setAppealReason] = useState('')
 
   useEffect(() => {
     companyApi.getAll().then(async (companies) => {
-      const c = companies[0]
+      const c = companies.find((company) => company.userId === user?.id) || companies[0]
       if (!c) return
       setCompany(c)
       const [d, p] = await Promise.all([
@@ -35,7 +41,7 @@ export default function CompanyDriversPage() {
       setDrivers(d)
       setPending(p)
     }).finally(() => setLoading(false))
-  }, [])
+  }, [user?.id])
 
   const handleApprove = async (regId: string) => {
     await driverApi.approveRegistration(regId)
@@ -47,6 +53,13 @@ export default function CompanyDriversPage() {
     setPending(pending.filter((r) => r.id !== rejectDialog.regId))
     setRejectDialog({ open: false, regId: '' })
     setRejectNote('')
+  }
+
+  const handleCreateAppeal = async () => {
+    if (!appealDialog.driverId || !appealReason.trim()) return
+    await appealApi.create(appealDialog.driverId, appealReason.trim())
+    setAppealDialog({ open: false, driverId: '' })
+    setAppealReason('')
   }
 
   const statusColor: Record<string, any> = { OFFLINE: 'default', ONLINE: 'success', BUSY: 'warning' }
@@ -80,6 +93,7 @@ export default function CompanyDriversPage() {
                   <TableCell>Loại xe</TableCell>
                   <TableCell>Điểm uy tín</TableCell>
                   <TableCell>Trạng thái</TableCell>
+                  <TableCell align="right">Hành động</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -105,6 +119,16 @@ export default function CompanyDriversPage() {
                     </TableCell>
                     <TableCell>
                       <Chip label={statusLabel[d.onlineStatus]} color={statusColor[d.onlineStatus]} size="small" />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<GavelIcon />}
+                        onClick={() => setAppealDialog({ open: true, driverId: d.id })}
+                      >
+                        Kháng cáo
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -168,6 +192,22 @@ export default function CompanyDriversPage() {
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setRejectDialog({ open: false, regId: '' })} color="inherit">Hủy</Button>
           <Button variant="contained" color="error" onClick={handleReject}>Xác nhận từ chối</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={appealDialog.open} onClose={() => setAppealDialog({ open: false, driverId: '' })} maxWidth="xs" fullWidth>
+        <DialogTitle>Tạo kháng cáo cho tài xế</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Lý do kháng cáo"
+            multiline rows={3} fullWidth sx={{ mt: 1 }}
+            value={appealReason}
+            onChange={(e) => setAppealReason(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setAppealDialog({ open: false, driverId: '' })} color="inherit">Hủy</Button>
+          <Button variant="contained" onClick={handleCreateAppeal}>Gửi kháng cáo</Button>
         </DialogActions>
       </Dialog>
     </Box>

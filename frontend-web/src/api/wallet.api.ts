@@ -11,8 +11,8 @@ export const walletApi = {
   withdraw: (amount: number) =>
     axiosInstance.post<WalletTransaction>('/wallet/withdraw', { amount }).then((r) => r.data),
 
-  getTransactions: () =>
-    axiosInstance.get<WalletTransaction[]>('/wallet/transactions').then((r) => r.data),
+  getTransactions: (params?: { page?: number; size?: number }) =>
+    axiosInstance.get<WalletTransaction[]>('/wallet/transactions', { params }).then((r) => r.data),
 
   getByCompanyAdmin: (companyId: string) =>
     axiosInstance.get<CompanyWallet>(`/wallet/admin/${companyId}`).then((r) => r.data),

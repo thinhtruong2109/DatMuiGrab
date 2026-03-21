@@ -5,22 +5,25 @@ import {
 } from '@mui/material'
 import { rideApi } from '@/api/ride.api'
 import { companyApi } from '@/api/company.api'
+import { useAuthStore } from '@/store/authStore'
 import { formatCurrency, formatDate, rideStatusLabel, rideStatusColor } from '@/utils/format'
 import type { Ride } from '@/types'
 import PageHeader from '@/components/common/PageHeader'
 import EmptyState from '@/components/common/EmptyState'
 
 export default function CompanyRidesPage() {
+  const { user } = useAuthStore()
   const [rides, setRides] = useState<Ride[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     companyApi.getAll().then(async (companies) => {
-      if (!companies[0]) return
-      const r = await rideApi.getByCompany(companies[0].id)
+      const company = companies.find((item) => item.userId === user?.id) || companies[0]
+      if (!company) return
+      const r = await rideApi.getByCompany(company.id)
       setRides(r)
     }).finally(() => setLoading(false))
-  }, [])
+  }, [user?.id])
 
   if (loading) return <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
 

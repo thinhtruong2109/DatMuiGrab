@@ -6,7 +6,7 @@ import {
 import BlockIcon from '@mui/icons-material/Block'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import SearchIcon from '@mui/icons-material/Search'
-import axiosInstance from '@/api/axiosInstance'
+import { userService } from '@/services'
 import { formatDate } from '@/utils/format'
 import type { User } from '@/types'
 import PageHeader from '@/components/common/PageHeader'
@@ -23,8 +23,9 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    axiosInstance.get<User[]>('/users').then((r) => {
-      setUsers(r.data); setFiltered(r.data)
+    userService.getAll().then((data) => {
+      setUsers(data)
+      setFiltered(data)
     }).finally(() => setLoading(false))
   }, [])
 
@@ -36,12 +37,12 @@ export default function AdminUsersPage() {
   }, [search, users])
 
   const handleBan = async (id: string) => {
-    await axiosInstance.put(`/users/${id}/ban`)
+    await userService.ban(id)
     setUsers(users.map((u) => u.id === id ? { ...u, status: 'BANNED' } : u))
   }
 
   const handleUnban = async (id: string) => {
-    await axiosInstance.put(`/users/${id}/unban`)
+    await userService.unban(id)
     setUsers(users.map((u) => u.id === id ? { ...u, status: 'ACTIVE' } : u))
   }
 

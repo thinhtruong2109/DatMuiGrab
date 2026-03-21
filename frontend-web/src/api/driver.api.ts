@@ -14,8 +14,8 @@ export const driverApi = {
   getMyRides: () =>
     axiosInstance.get<Ride[]>('/drivers/me/rides').then((r) => r.data),
 
-  getByCompany: (companyId: string) =>
-    axiosInstance.get<Driver[]>(`/drivers/company/${companyId}`).then((r) => r.data),
+  getByCompany: (companyId: string, params?: { page?: number; size?: number }) =>
+    axiosInstance.get<Driver[]>(`/drivers/company/${companyId}`, { params }).then((r) => r.data),
 
   ban: (driverId: string, reason: string) =>
     axiosInstance.put(`/drivers/${driverId}/ban`, { reason }).then((r) => r.data),
@@ -24,12 +24,12 @@ export const driverApi = {
   register: (data: Partial<DriverCompanyRegistration> & { companyId: string }) =>
     axiosInstance.post<DriverCompanyRegistration>('/driver-registrations', data).then((r) => r.data),
 
-  getMyRegistrations: () =>
-    axiosInstance.get<DriverCompanyRegistration[]>('/driver-registrations/me').then((r) => r.data),
+  getMyRegistrations: (params?: { page?: number; size?: number }) =>
+    axiosInstance.get<DriverCompanyRegistration[]>('/driver-registrations/me', { params }).then((r) => r.data),
 
-  getPendingByCompany: (companyId: string) =>
+  getPendingByCompany: (companyId: string, params?: { page?: number; size?: number }) =>
     axiosInstance
-      .get<DriverCompanyRegistration[]>(`/driver-registrations/company/${companyId}/pending`)
+      .get<DriverCompanyRegistration[]>(`/driver-registrations/company/${companyId}/pending`, { params })
       .then((r) => r.data),
 
   approveRegistration: (id: string) =>
