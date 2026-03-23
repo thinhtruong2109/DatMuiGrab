@@ -5,7 +5,7 @@ import {
   List, ListItem, ListItemButton, ListItemText, ListItemAvatar,
   Avatar, Chip, Divider, CircularProgress, Alert, Paper,
 } from '@mui/material'
-import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar'
@@ -51,6 +51,17 @@ function MapClickHandler({ mode, onPick }: { mode: SelectMode; onPick: (lat: num
   return null
 }
 
+function MapAutoCenter({ position }: { position: [number, number] | null }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!position) return
+    map.flyTo(position, Math.max(map.getZoom(), 15), { duration: 0.8 })
+  }, [map, position])
+
+  return null
+}
+
 export default function BookRidePage() {
   const navigate = useNavigate()
   const { coords: myCoords } = useGeolocation()
@@ -60,13 +71,30 @@ export default function BookRidePage() {
   const [pickup, setPickup] = useState<{ lat: number; lng: number; address: string } | null>(null)
   const [destination, setDestination] = useState<{ lat: number; lng: number; address: string } | null>(null)
   const [routePoints, setRoutePoints] = useState<[number, number][]>([])
+  const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(null)
   const [estimates, setEstimates] = useState<CompanyEstimate[]>([])
   const [selectedCompany, setSelectedCompany] = useState<CompanyEstimate | null>(null)
+  const [focusPosition, setFocusPosition] = useState<[number, number] | null>(null)
+  const [fetchedEstimates, setFetchedEstimates] = useState(false)
   const [loading, setLoading] = useState(false)
   const [booking, setBooking] = useState(false)
   const [error, setError] = useState('')
 
   const center: [number, number] = myCoords || [9.1770, 105.1524] // Cà Mau
+
+  const haversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+    const R = 6371
+    const dLat = ((lat2 - lat1) * Math.PI) / 180
+    const dLng = ((lng2 - lng1) * Math.PI) / 180
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return R * c
+  }
 
   // Reverse geocode using nominatim
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
@@ -91,17 +119,38 @@ export default function BookRidePage() {
 
   // Fetch route when both points set
   useEffect(() => {
-    if (!pickup || !destination) return
+    if (!pickup || !destination) {
+      setRoutePoints([])
+      setRouteDistanceKm(null)
+      setEstimates([])
+      setSelectedCompany(null)
+      setFetchedEstimates(false)
+      return
+    }
+
+    setEstimates([])
+    setSelectedCompany(null)
+    setFetchedEstimates(false)
+
     const fetchRoute = async () => {
       try {
         const url = `https://router.project-osrm.org/route/v1/driving/${pickup.lng},${pickup.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`
         const res = await fetch(url)
         const data = await res.json()
         if (data.routes?.[0]) {
-          const coords = data.routes[0].geometry.coordinates as [number, number][]
+          const route = data.routes[0]
+          const coords = route.geometry.coordinates as [number, number][]
           setRoutePoints(coords.map(([lng, lat]) => [lat, lng]))
+          if (typeof route.distance === 'number') {
+            setRouteDistanceKm(route.distance / 1000)
+          }
+          return
         }
-      } catch {}
+
+        setRouteDistanceKm(haversineDistance(pickup.lat, pickup.lng, destination.lat, destination.lng))
+      } catch {
+        setRouteDistanceKm(haversineDistance(pickup.lat, pickup.lng, destination.lat, destination.lng))
+      }
     }
     fetchRoute()
   }, [pickup, destination])
@@ -111,9 +160,13 @@ export default function BookRidePage() {
     if (!pickup || !destination) return
     setLoading(true)
     setError('')
+    setFetchedEstimates(true)
     try {
       const data = await companyApi.getEstimates(pickup.lat, pickup.lng, destination.lat, destination.lng)
       setEstimates(data)
+      if (data.length === 0) {
+        setSelectedCompany(null)
+      }
     } catch {
       setError('Không thể lấy danh sách công ty, vui lòng thử lại')
     } finally {
@@ -142,6 +195,7 @@ export default function BookRidePage() {
   const useMyLocation = () => {
     if (myCoords) {
       setPickup({ lat: myCoords[0], lng: myCoords[1], address: 'Vị trí của bạn' })
+      setFocusPosition([myCoords[0], myCoords[1]])
     }
   }
 
@@ -229,6 +283,18 @@ export default function BookRidePage() {
             {loading ? <CircularProgress size={20} color="inherit" /> : 'Xem giá & Chọn công ty'}
           </Button>
 
+          {routeDistanceKm !== null && (
+            <Alert severity="info" sx={{ mt: 2, borderRadius: 2 }}>
+              Khoảng cách dự kiến: <strong>{routeDistanceKm.toFixed(2)} km</strong>
+            </Alert>
+          )}
+
+          {fetchedEstimates && estimates.length === 0 && !loading && !error && (
+            <Alert severity="warning" sx={{ mt: 2, borderRadius: 2 }}>
+              Hiện chưa có công ty vận tải ACTIVE để báo giá cho tuyến này.
+            </Alert>
+          )}
+
           {/* Company list */}
           {estimates.length > 0 && (
             <Box mt={3}>
@@ -302,6 +368,7 @@ export default function BookRidePage() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           />
+          <MapAutoCenter position={focusPosition} />
           <MapClickHandler mode={selectMode} onPick={handleMapPick} />
 
           {pickup && <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon} />}

@@ -1,14 +1,16 @@
 package dat_mui_grab.datmuigrab.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -22,6 +24,7 @@ public class OsrmService {
                                     double destLat, double destLng) {
         try {
             String url = String.format(
+                    Locale.US,
                     "/route/v1/driving/%f,%f;%f,%f?overview=false",
                     pickupLng, pickupLat, destLng, destLat
             );

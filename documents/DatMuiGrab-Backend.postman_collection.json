@@ -1,0 +1,220 @@
+{
+  "info": {
+    "_postman_id": "datmuigrab-backend-collection",
+    "name": "DatMuiGrab Backend API",
+    "description": "API collection generated from backend controllers in DatMuiGrab.\n\nAuth: Set accessToken after login and collection will use Bearer {{accessToken}} by default.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "refreshToken", "value": "", "type": "string" },
+    { "key": "companyId", "value": "11111111-1111-1111-1111-111111111111", "type": "string" },
+    { "key": "userId", "value": "22222222-2222-2222-2222-222222222222", "type": "string" },
+    { "key": "driverId", "value": "33333333-3333-3333-3333-333333333333", "type": "string" },
+    { "key": "registrationId", "value": "44444444-4444-4444-4444-444444444444", "type": "string" },
+    { "key": "rideId", "value": "55555555-5555-5555-5555-555555555555", "type": "string" },
+    { "key": "appealId", "value": "66666666-6666-6666-6666-666666666666", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{accessToken}}", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123\",\n  \"fullName\": \"Nguyen Van A\",\n  \"phoneNumber\": \"0901234567\",\n  \"role\": \"CUSTOMER\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/verify-email", "host": ["{{baseUrl}}"], "path": ["api", "auth", "verify-email"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"user@example.com\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/resend-otp", "host": ["{{baseUrl}}"], "path": ["api", "auth", "resend-otp"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "if (data && data.refreshToken) pm.collectionVariables.set('refreshToken', data.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data && data.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "if (data && data.refreshToken) pm.collectionVariables.set('refreshToken', data.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/refresh-token", "host": ["{{baseUrl}}"], "path": ["api", "auth", "refresh-token"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        { "name": "Get Me", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/users/me", "host": ["{{baseUrl}}"], "path": ["api", "users", "me"] } }, "response": [] },
+        { "name": "Update Me", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Nguyen Van B\",\n  \"phoneNumber\": \"0909999999\"\n}" }, "url": { "raw": "{{baseUrl}}/api/users/me", "host": ["{{baseUrl}}"], "path": ["api", "users", "me"] } }, "response": [] },
+        { "name": "Change Password", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"Password123\",\n  \"newPassword\": \"NewPassword456\"\n}" }, "url": { "raw": "{{baseUrl}}/api/users/me/password", "host": ["{{baseUrl}}"], "path": ["api", "users", "me", "password"] } }, "response": [] },
+        { "name": "[Admin] Get All Users", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api", "users"] } }, "response": [] },
+        { "name": "[Admin] Ban User", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/users/{{userId}}/ban", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{userId}}", "ban"] } }, "response": [] },
+        { "name": "[Admin] Unban User", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/users/{{userId}}/unban", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{userId}}", "unban"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Companies",
+      "item": [
+        { "name": "Get Active Companies (Public)", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": { "raw": "{{baseUrl}}/api/companies", "host": ["{{baseUrl}}"], "path": ["api", "companies"] } }, "response": [] },
+        { "name": "Get Company By Id (Public)", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}"] } }, "response": [] },
+        { "name": "Estimate Price (Public)", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": { "raw": "{{baseUrl}}/api/companies/estimate?pickupLat=10.7769&pickupLng=106.7009&destLat=10.7600&destLng=106.6800", "host": ["{{baseUrl}}"], "path": ["api", "companies", "estimate"], "query": [{ "key": "pickupLat", "value": "10.7769" }, { "key": "pickupLng", "value": "106.7009" }, { "key": "destLat", "value": "10.7600" }, { "key": "destLng", "value": "106.6800" }] } }, "response": [] },
+        { "name": "Create Company", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"companyName\": \"Mai Linh Cà Mau\",\n  \"licenseNumber\": \"123/GP-VTKD\",\n  \"address\": \"123 Đường Lý Thường Kiệt, Cà Mau\",\n  \"description\": \"Công ty vận tải\",\n  \"pricePerKm\": 15000,\n  \"driverRevenuePercent\": 75\n}" }, "url": { "raw": "{{baseUrl}}/api/companies", "host": ["{{baseUrl}}"], "path": ["api", "companies"] } }, "response": [] },
+        { "name": "Update Company", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"description\": \"Updated description\",\n  \"driverRevenuePercent\": 80\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}"] } }, "response": [] },
+        { "name": "Update Price", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"pricePerKm\": 18000\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/price", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "price"] } }, "response": [] },
+        { "name": "[Admin] Get All Companies", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/companies/admin/all", "host": ["{{baseUrl}}"], "path": ["api", "companies", "admin", "all"] } }, "response": [] },
+        { "name": "[Admin] Approve Company", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "approve"] } }, "response": [] },
+        { "name": "[Admin] Suspend Company", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Giấy phép chưa hợp lệ\"\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/suspend", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "suspend"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Drivers",
+      "item": [
+        { "name": "Get My Driver Profile", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/drivers/me", "host": ["{{baseUrl}}"], "path": ["api", "drivers", "me"] } }, "response": [] },
+        { "name": "Update My Driver Profile", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"licenseNumber\": \"012345678901\",\n  \"idCardNumber\": \"079123456789\",\n  \"vehiclePlate\": \"69A1-12345\",\n  \"vehicleType\": \"Xe máy\",\n  \"vehicleModel\": \"Honda Wave Alpha\"\n}" }, "url": { "raw": "{{baseUrl}}/api/drivers/me", "host": ["{{baseUrl}}"], "path": ["api", "drivers", "me"] } }, "response": [] },
+        { "name": "Set Driver Status", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"ONLINE\"\n}" }, "url": { "raw": "{{baseUrl}}/api/drivers/me/status", "host": ["{{baseUrl}}"], "path": ["api", "drivers", "me", "status"] } }, "response": [] },
+        { "name": "Get My Driver Rides", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/drivers/me/rides", "host": ["{{baseUrl}}"], "path": ["api", "drivers", "me", "rides"] } }, "response": [] },
+        { "name": "Get Drivers By Company", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/drivers/company/{{companyId}}", "host": ["{{baseUrl}}"], "path": ["api", "drivers", "company", "{{companyId}}"] } }, "response": [] },
+        { "name": "[Admin] Ban Driver", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Unsafe driving\"\n}" }, "url": { "raw": "{{baseUrl}}/api/drivers/{{driverId}}/ban", "host": ["{{baseUrl}}"], "path": ["api", "drivers", "{{driverId}}", "ban"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Driver Registrations",
+      "item": [
+        { "name": "Register To Company", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"licenseNumber\": \"012345678901\",\n  \"idCardNumber\": \"079123456789\",\n  \"phoneNumber\": \"0901234567\",\n  \"vehiclePlate\": \"69A1-12345\",\n  \"vehicleType\": \"Xe máy\",\n  \"vehicleModel\": \"Honda Wave Alpha\"\n}" }, "url": { "raw": "{{baseUrl}}/api/driver-registrations", "host": ["{{baseUrl}}"], "path": ["api", "driver-registrations"] } }, "response": [] },
+        { "name": "Get My Registrations", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/driver-registrations/me", "host": ["{{baseUrl}}"], "path": ["api", "driver-registrations", "me"] } }, "response": [] },
+        { "name": "Get Pending By Company", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/driver-registrations/company/{{companyId}}/pending", "host": ["{{baseUrl}}"], "path": ["api", "driver-registrations", "company", "{{companyId}}", "pending"] } }, "response": [] },
+        { "name": "Approve Registration", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/driver-registrations/{{registrationId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "driver-registrations", "{{registrationId}}", "approve"] } }, "response": [] },
+        { "name": "Reject Registration", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"note\": \"Hồ sơ chưa đầy đủ\"\n}" }, "url": { "raw": "{{baseUrl}}/api/driver-registrations/{{registrationId}}/reject", "host": ["{{baseUrl}}"], "path": ["api", "driver-registrations", "{{registrationId}}", "reject"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Rides",
+      "item": [
+        { "name": "Book Ride", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"pickupLat\": 10.7769,\n  \"pickupLng\": 106.7009,\n  \"pickupAddress\": \"Cà Mau\",\n  \"destinationLat\": 10.7600,\n  \"destinationLng\": 106.6800,\n  \"destinationAddress\": \"Bến xe\"\n}" }, "url": { "raw": "{{baseUrl}}/api/rides", "host": ["{{baseUrl}}"], "path": ["api", "rides"] } }, "response": [] },
+        { "name": "Get Ride By Id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/rides/{{rideId}}", "host": ["{{baseUrl}}"], "path": ["api", "rides", "{{rideId}}"] } }, "response": [] },
+        { "name": "Cancel Ride", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Đổi kế hoạch\"\n}" }, "url": { "raw": "{{baseUrl}}/api/rides/{{rideId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "rides", "{{rideId}}", "cancel"] } }, "response": [] },
+        { "name": "Update Ride Status", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"DRIVER_ARRIVING\"\n}" }, "url": { "raw": "{{baseUrl}}/api/rides/{{rideId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "rides", "{{rideId}}", "status"] } }, "response": [] },
+        { "name": "Get My Rides", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/rides/my-rides", "host": ["{{baseUrl}}"], "path": ["api", "rides", "my-rides"] } }, "response": [] },
+        { "name": "Get Company Rides", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/rides/company/{{companyId}}", "host": ["{{baseUrl}}"], "path": ["api", "rides", "company", "{{companyId}}"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        { "name": "Pay Ride", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"rideId\": \"{{rideId}}\",\n  \"method\": \"VNPAY\"\n}" }, "url": { "raw": "{{baseUrl}}/api/payments", "host": ["{{baseUrl}}"], "path": ["api", "payments"] } }, "response": [] },
+        { "name": "Get Payment By Ride", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/payments/ride/{{rideId}}", "host": ["{{baseUrl}}"], "path": ["api", "payments", "ride", "{{rideId}}"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Ratings",
+      "item": [
+        { "name": "Create Rating", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"rideId\": \"{{rideId}}\",\n  \"stars\": 5,\n  \"comment\": \"Tài xế thân thiện\"\n}" }, "url": { "raw": "{{baseUrl}}/api/ratings", "host": ["{{baseUrl}}"], "path": ["api", "ratings"] } }, "response": [] },
+        { "name": "Get Ratings By Driver (Public)", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": { "raw": "{{baseUrl}}/api/ratings/driver/{{driverId}}", "host": ["{{baseUrl}}"], "path": ["api", "ratings", "driver", "{{driverId}}"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        { "name": "Get Ride Messages", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/chat/{{rideId}}/messages", "host": ["{{baseUrl}}"], "path": ["api", "chat", "{{rideId}}", "messages"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Appeals",
+      "item": [
+        { "name": "Create Appeal", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"driverId\": \"{{driverId}}\",\n  \"reason\": \"Kháng cáo điểm uy tín\"\n}" }, "url": { "raw": "{{baseUrl}}/api/appeals", "host": ["{{baseUrl}}"], "path": ["api", "appeals"] } }, "response": [] },
+        { "name": "[Admin] Get All Appeals", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/appeals", "host": ["{{baseUrl}}"], "path": ["api", "appeals"] } }, "response": [] },
+        { "name": "[Admin] Resolve Appeal", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"APPROVED\",\n  \"adminNote\": \"Đã xác minh\"\n}" }, "url": { "raw": "{{baseUrl}}/api/appeals/{{appealId}}/resolve", "host": ["{{baseUrl}}"], "path": ["api", "appeals", "{{appealId}}", "resolve"] } }, "response": [] }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        { "name": "Get My Wallet", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/wallet", "host": ["{{baseUrl}}"], "path": ["api", "wallet"] } }, "response": [] },
+        { "name": "Update Bank Info", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"bankName\": \"Vietcombank\",\n  \"bankAccountNumber\": \"1234567890\",\n  \"bankAccountHolder\": \"NGUYEN VAN A\"\n}" }, "url": { "raw": "{{baseUrl}}/api/wallet/bank-info", "host": ["{{baseUrl}}"], "path": ["api", "wallet", "bank-info"] } }, "response": [] },
+        { "name": "Withdraw", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"amount\": 500000\n}" }, "url": { "raw": "{{baseUrl}}/api/wallet/withdraw", "host": ["{{baseUrl}}"], "path": ["api", "wallet", "withdraw"] } }, "response": [] },
+        { "name": "Get Wallet Transactions", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/wallet/transactions", "host": ["{{baseUrl}}"], "path": ["api", "wallet", "transactions"] } }, "response": [] },
+        { "name": "[Admin] Get Wallet By Company", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/wallet/admin/{{companyId}}", "host": ["{{baseUrl}}"], "path": ["api", "wallet", "admin", "{{companyId}}"] } }, "response": [] }
+      ]
+    }
+  ]
+}
