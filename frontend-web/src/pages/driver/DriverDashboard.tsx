@@ -8,6 +8,7 @@ import StarIcon from '@mui/icons-material/Star'
 import RouteIcon from '@mui/icons-material/Route'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import { driverApi } from '@/api/driver.api'
+import { rideApi } from '@/api/ride.api'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useRideStore } from '@/store/rideStore'
@@ -47,8 +48,18 @@ export default function DriverDashboard() {
   // Listen for new ride requests
   useEffect(() => {
     if (!driver) return
-    const unsub = subscribe(`/topic/driver/${driver.id}/new-ride`, (ride: Ride) => {
-      setCurrentRide(ride)
+    const unsub = subscribe(`/topic/driver/${driver.id}/new-ride`, async (payload: Ride | string) => {
+      if (typeof payload === 'string') {
+        try {
+          const ride = await rideApi.getById(payload)
+          setCurrentRide(ride)
+        } catch {
+          // ignore transient fetch error
+        }
+        return
+      }
+
+      setCurrentRide(payload)
     })
     return unsub
   }, [driver?.id])

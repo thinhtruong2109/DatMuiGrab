@@ -17,6 +17,7 @@ import { formatCurrency, rideStatusLabel, rideStatusColor } from '@/utils/format
 import type { Ride } from '@/types'
 
 const STATUS_STEPS: Record<string, { next: string; label: string; color: 'primary' | 'success' }> = {
+  SEARCHING: { next: 'DRIVER_ARRIVING', label: 'Nhận cuốc', color: 'primary' },
   MATCHED: { next: 'DRIVER_ARRIVING', label: 'Bắt đầu đến đón', color: 'primary' },
   DRIVER_ARRIVING: { next: 'IN_PROGRESS', label: 'Đã đón khách', color: 'primary' },
   IN_PROGRESS: { next: 'COMPLETED', label: 'Hoàn thành chuyến', color: 'success' },
