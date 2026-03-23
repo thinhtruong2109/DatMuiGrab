@@ -1,5 +1,13 @@
 package dat_mui_grab.datmuigrab.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import dat_mui_grab.datmuigrab.dto.request.CreateAppealRequest;
 import dat_mui_grab.datmuigrab.dto.request.ResolveAppealRequest;
 import dat_mui_grab.datmuigrab.dto.response.AppealResponse;
@@ -16,13 +24,6 @@ import dat_mui_grab.datmuigrab.repository.DriverRepository;
 import dat_mui_grab.datmuigrab.repository.ReputationAppealRepository;
 import dat_mui_grab.datmuigrab.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +39,7 @@ public class AppealService {
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay nguoi dung"));
 
         Driver driver = driverRepository.findById(request.getDriverId())
-                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay tai xe"));
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Kjhong tim thay tai xe"));
 
         AppealedBy appealedBy = requester.getRole() == UserRole.DRIVER
                 ? AppealedBy.DRIVER : AppealedBy.COMPANY;

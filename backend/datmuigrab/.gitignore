@@ -32,6 +32,6 @@ build/
 ### VS Code ###
 .vscode/
 
+# Local environment config
+/src/main/resources/application.properties
 
-# ENV
-src/main/resources/application.properties
