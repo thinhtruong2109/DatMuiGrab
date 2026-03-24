@@ -69,10 +69,12 @@ pipeline {
         stage('Deploy backend') {
             when { expression { env.BUILD_BACKEND == 'true' } }
             steps {
-                dir("${DEPLOY_DIR}") {
+                dir("/home/ubuntu/datmuigrab") {
                     sh '''
                         docker pull ${BACKEND_IMAGE}
-                        BACKEND_IMAGE=${BACKEND_IMAGE} docker compose up -d --no-deps backend
+                        docker compose stop backend
+                        docker compose rm -f backend
+                        docker compose up -d backend
                     '''
                 }
             }
@@ -81,10 +83,12 @@ pipeline {
         stage('Deploy frontend') {
             when { expression { env.BUILD_FRONTEND == 'true' } }
             steps {
-                dir("${DEPLOY_DIR}") {
+                dir("/home/ubuntu/datmuigrab") {
                     sh '''
                         docker pull ${FRONTEND_IMAGE}
-                        FRONTEND_IMAGE=${FRONTEND_IMAGE} docker compose up -d --no-deps frontend
+                        docker compose stop frontend
+                        docker compose rm -f frontend
+                        docker compose up -d frontend
                     '''
                 }
             }
