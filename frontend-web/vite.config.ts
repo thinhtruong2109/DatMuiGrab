@@ -9,12 +9,14 @@ export default defineConfig(({ mode }) => {
     .split(',')
     .map((host) => host.trim())
     .filter(Boolean)
+    .flatMap((host) => [host, `.${host}`])
 
   return {
     plugins: [react()],
     define: {
       global: 'globalThis',
     },
+    base: '/grabdatmui/',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
@@ -24,16 +26,6 @@ export default defineConfig(({ mode }) => {
       port: vitePort,
       host: '0.0.0.0',
       allowedHosts,
-      proxy: {
-        '/api': {
-          target: 'http://localhost:8080',
-          changeOrigin: true,
-        },
-        '/ws': {
-          target: 'ws://localhost:8080',
-          ws: true,
-        },
-      },
     },
   }
 })
