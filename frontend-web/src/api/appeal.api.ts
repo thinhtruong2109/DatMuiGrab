@@ -11,3 +11,6 @@ export const appealApi = {
   resolve: (id: string, status: AppealStatus, adminNote: string) =>
     axiosInstance.put(`/appeals/${id}/resolve`, { status, adminNote }).then((r) => r.data),
 }
+
+
+// test jenkins
