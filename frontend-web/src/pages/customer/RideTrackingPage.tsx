@@ -32,10 +32,92 @@ const driverIcon = new L.Icon({
 
 function MovingMarker({ position }: { position: [number, number] }) {
   const markerRef = useRef<L.Marker>(null)
+  const frameRef = useRef<number | null>(null)
+  const currentPositionRef = useRef<[number, number]>(position)
+
   useEffect(() => {
-    markerRef.current?.setLatLng(position)
+    const start = currentPositionRef.current
+    const end = position
+    const startedAt = performance.now()
+    const duration = 900
+
+    if (frameRef.current) cancelAnimationFrame(frameRef.current)
+
+    const animate = (now: number) => {
+      const progress = Math.min((now - startedAt) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      const lat = start[0] + (end[0] - start[0]) * eased
+      const lng = start[1] + (end[1] - start[1]) * eased
+      markerRef.current?.setLatLng([lat, lng])
+
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(animate)
+      } else {
+        currentPositionRef.current = end
+        frameRef.current = null
+      }
+    }
+
+    frameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current)
+    }
   }, [position])
+
   return <Marker ref={markerRef} position={position} icon={driverIcon} />
+}
+
+function RouteAutoFit({ points, fallbackCenter }: { points: [number, number][]; fallbackCenter: [number, number] }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (points.length > 1) {
+      map.fitBounds(L.latLngBounds(points), { padding: [40, 40] })
+      return
+    }
+
+    map.flyTo(fallbackCenter, Math.max(map.getZoom(), 14), { duration: 0.8 })
+  }, [map, points, fallbackCenter])
+
+  return null
+}
+
+const haversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+async function getRoutePoints(start: [number, number], end: [number, number]) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`
+    const res = await fetch(url)
+    const data = await res.json()
+    if (data.routes?.[0]) {
+      const route = data.routes[0]
+      const coords = route.geometry.coordinates as [number, number][]
+      return {
+        points: coords.map(([lng, lat]) => [lat, lng] as [number, number]),
+        distanceKm: typeof route.distance === 'number' ? route.distance / 1000 : haversineDistance(start[0], start[1], end[0], end[1]),
+      }
+    }
+  } catch {
+    // fallback below
+  }
+
+  return {
+    points: [start, end],
+    distanceKm: haversineDistance(start[0], start[1], end[0], end[1]),
+  }
 }
 
 export default function RideTrackingPage() {
@@ -51,7 +133,11 @@ export default function RideTrackingPage() {
   const [ratingOpen, setRatingOpen] = useState(false)
   const [stars, setStars] = useState<number | null>(null)
   const [comment, setComment] = useState('')
-  const [driverPos, setDriverPos] = useState<[number, number] | null>(null)
+  const [driverPos, setDriverPos] = useState<[number, number] | null>(
+    driverLocation ? [driverLocation.lat, driverLocation.lng] : null,
+  )
+  const [activeRoutePoints, setActiveRoutePoints] = useState<[number, number][]>([])
+  const [activeRouteDistanceKm, setActiveRouteDistanceKm] = useState<number | null>(null)
 
   const { subscribe, send } = useWebSocket()
 
@@ -69,6 +155,7 @@ export default function RideTrackingPage() {
     if (!rideId) return
 
     const unsubLoc = subscribe(`/topic/ride/${rideId}/location`, (loc: LocationPayload) => {
+      setDriverLocation(loc)
       setDriverPos([loc.lat, loc.lng])
     })
 
@@ -83,6 +170,50 @@ export default function RideTrackingPage() {
 
     return () => { unsubLoc(); unsubChat(); unsubStatus() }
   }, [rideId])
+
+  useEffect(() => {
+    if (!ride) {
+      setActiveRoutePoints([])
+      setActiveRouteDistanceKm(null)
+      return
+    }
+
+    const pickupPoint: [number, number] = [ride.pickupLat, ride.pickupLng]
+    const destinationPoint: [number, number] = [ride.destinationLat, ride.destinationLng]
+
+    let start: [number, number] | null = null
+    let end: [number, number] | null = null
+
+    if (ride.status === 'MATCHED' || ride.status === 'DRIVER_ARRIVING') {
+      if (driverPos) {
+        start = driverPos
+        end = pickupPoint
+      }
+    } else if (ride.status === 'IN_PROGRESS') {
+      start = driverPos || pickupPoint
+      end = destinationPoint
+    } else if (ride.status === 'COMPLETED') {
+      start = pickupPoint
+      end = destinationPoint
+    }
+
+    if (!start || !end) {
+      setActiveRoutePoints([])
+      setActiveRouteDistanceKm(null)
+      return
+    }
+
+    let cancelled = false
+    getRoutePoints(start, end).then((result) => {
+      if (cancelled) return
+      setActiveRoutePoints(result.points)
+      setActiveRouteDistanceKm(result.distanceKm)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [ride, driverPos])
 
   const handleSendMessage = () => {
     if (!message.trim() || !rideId) return
@@ -108,6 +239,13 @@ export default function RideTrackingPage() {
   )
 
   const center: [number, number] = driverPos || [ride.pickupLat, ride.pickupLng]
+  const routePhaseLabel =
+    ride.status === 'IN_PROGRESS'
+      ? 'Đang di chuyển đến điểm đến'
+      : ride.status === 'MATCHED' || ride.status === 'DRIVER_ARRIVING'
+        ? 'Tài xế đang đến điểm đón'
+        : null
+  const routeColor = ride.status === 'IN_PROGRESS' ? 'success.main' : 'primary.main'
 
   return (
     <Box display="flex" height="calc(100vh - 64px)">
@@ -171,6 +309,15 @@ export default function RideTrackingPage() {
             <Typography variant="body2" color="text.secondary">Giá ước tính</Typography>
             <Typography fontWeight={700} color="primary.main">{formatCurrency(ride.estimatedPrice)}</Typography>
           </Box>
+
+          {routePhaseLabel && activeRouteDistanceKm !== null && (
+            <Card variant="outlined" sx={{ mt: 2, borderRadius: 2 }}>
+              <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Typography fontSize={12} color="text.secondary">{routePhaseLabel}</Typography>
+                <Typography fontWeight={700}>{activeRouteDistanceKm.toFixed(2)} km</Typography>
+              </CardContent>
+            </Card>
+          )}
 
           {ride.status === 'SEARCHING' && (
             <Box mt={3} textAlign="center">
@@ -237,8 +384,12 @@ export default function RideTrackingPage() {
       <Box flex={1}>
         <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%' }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <RouteAutoFit points={activeRoutePoints} fallbackCenter={center} />
           <Marker position={[ride.pickupLat, ride.pickupLng]} />
           <Marker position={[ride.destinationLat, ride.destinationLng]} />
+          {activeRoutePoints.length > 1 && (
+            <Polyline positions={activeRoutePoints} pathOptions={{ color: routeColor }} weight={5} opacity={0.85} />
+          )}
           {driverPos && <MovingMarker position={driverPos} />}
         </MapContainer>
       </Box>

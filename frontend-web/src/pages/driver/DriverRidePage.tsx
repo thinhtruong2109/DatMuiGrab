@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Box, Card, CardContent, Typography, Button, Chip,
   Divider, Alert, IconButton, TextField, CircularProgress,
 } from '@mui/material'
-import { MapContainer, TileLayer, Marker } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
+import L from 'leaflet'
 import SendIcon from '@mui/icons-material/Send'
 import 'leaflet/dist/leaflet.css'
 import { rideApi } from '@/api/ride.api'
@@ -23,6 +24,102 @@ const STATUS_STEPS: Record<string, { next: string; label: string; color: 'primar
   IN_PROGRESS: { next: 'COMPLETED', label: 'Hoàn thành chuyến', color: 'success' },
 }
 
+const driverIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41], iconAnchor: [12, 41],
+})
+
+function MovingMarker({ position }: { position: [number, number] }) {
+  const markerRef = useRef<L.Marker>(null)
+  const frameRef = useRef<number | null>(null)
+  const currentPositionRef = useRef<[number, number]>(position)
+
+  useEffect(() => {
+    const start = currentPositionRef.current
+    const end = position
+    const startedAt = performance.now()
+    const duration = 900
+
+    if (frameRef.current) cancelAnimationFrame(frameRef.current)
+
+    const animate = (now: number) => {
+      const progress = Math.min((now - startedAt) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      const lat = start[0] + (end[0] - start[0]) * eased
+      const lng = start[1] + (end[1] - start[1]) * eased
+      markerRef.current?.setLatLng([lat, lng])
+
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(animate)
+      } else {
+        currentPositionRef.current = end
+        frameRef.current = null
+      }
+    }
+
+    frameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current)
+    }
+  }, [position])
+
+  return <Marker ref={markerRef} position={position} icon={driverIcon} />
+}
+
+function RouteAutoFit({ points, fallbackCenter }: { points: [number, number][]; fallbackCenter: [number, number] }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (points.length > 1) {
+      map.fitBounds(L.latLngBounds(points), { padding: [40, 40] })
+      return
+    }
+
+    map.flyTo(fallbackCenter, Math.max(map.getZoom(), 14), { duration: 0.8 })
+  }, [map, points, fallbackCenter])
+
+  return null
+}
+
+const haversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+async function getRoutePoints(start: [number, number], end: [number, number]) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`
+    const res = await fetch(url)
+    const data = await res.json()
+    if (data.routes?.[0]) {
+      const route = data.routes[0]
+      const coords = route.geometry.coordinates as [number, number][]
+      return {
+        points: coords.map(([lng, lat]) => [lat, lng] as [number, number]),
+        distanceKm: typeof route.distance === 'number' ? route.distance / 1000 : haversineDistance(start[0], start[1], end[0], end[1]),
+      }
+    }
+  } catch {
+    // fallback below
+  }
+
+  return {
+    points: [start, end],
+    distanceKm: haversineDistance(start[0], start[1], end[0], end[1]),
+  }
+}
+
 export default function DriverRidePage() {
   const { currentRide, setCurrentRide } = useRideStore()
   const { messages, addMessage, setMessages, clearMessages } = useChatStore()
@@ -31,14 +128,20 @@ export default function DriverRidePage() {
   const { subscribe, send } = useWebSocket()
   const [message, setMessage] = useState('')
   const [updating, setUpdating] = useState(false)
+  const [activeRoutePoints, setActiveRoutePoints] = useState<[number, number][]>([])
+  const [activeRouteDistanceKm, setActiveRouteDistanceKm] = useState<number | null>(null)
 
   useEffect(() => {
     if (!currentRide) return
     clearMessages()
     chatService.getMessagesByRide(currentRide.id).then(setMessages).catch(() => {})
-    const unsub = subscribe(`/topic/ride/${currentRide.id}/chat`, addMessage)
+    const unsubChat = subscribe(`/topic/ride/${currentRide.id}/chat`, addMessage)
+    const unsubStatus = subscribe(`/topic/ride/${currentRide.id}/status`, (updated: Ride) => {
+      setCurrentRide(updated)
+    })
     return () => {
-      unsub()
+      unsubChat()
+      unsubStatus()
       clearMessages()
     }
   }, [currentRide?.id])
@@ -51,6 +154,50 @@ export default function DriverRidePage() {
     }, 3000)
     return () => clearInterval(interval)
   }, [currentRide?.id, currentRide?.status, coords])
+
+  useEffect(() => {
+    if (!currentRide) {
+      setActiveRoutePoints([])
+      setActiveRouteDistanceKm(null)
+      return
+    }
+
+    const pickupPoint: [number, number] = [currentRide.pickupLat, currentRide.pickupLng]
+    const destinationPoint: [number, number] = [currentRide.destinationLat, currentRide.destinationLng]
+
+    let start: [number, number] | null = null
+    let end: [number, number] | null = null
+
+    if (currentRide.status === 'MATCHED' || currentRide.status === 'DRIVER_ARRIVING') {
+      if (coords) {
+        start = coords
+        end = pickupPoint
+      }
+    } else if (currentRide.status === 'IN_PROGRESS') {
+      start = coords || pickupPoint
+      end = destinationPoint
+    } else if (currentRide.status === 'COMPLETED') {
+      start = pickupPoint
+      end = destinationPoint
+    }
+
+    if (!start || !end) {
+      setActiveRoutePoints([])
+      setActiveRouteDistanceKm(null)
+      return
+    }
+
+    let cancelled = false
+    getRoutePoints(start, end).then((result) => {
+      if (cancelled) return
+      setActiveRoutePoints(result.points)
+      setActiveRouteDistanceKm(result.distanceKm)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentRide, coords])
 
   const handleUpdateStatus = async () => {
     if (!currentRide) return
@@ -82,6 +229,13 @@ export default function DriverRidePage() {
 
   const step = STATUS_STEPS[currentRide.status]
   const mapCenter: [number, number] = coords || [currentRide.pickupLat, currentRide.pickupLng]
+  const routePhaseLabel =
+    currentRide.status === 'IN_PROGRESS'
+      ? 'Lộ trình tới điểm đến'
+      : currentRide.status === 'MATCHED' || currentRide.status === 'DRIVER_ARRIVING'
+        ? 'Lộ trình tới điểm đón'
+        : null
+  const routeColor = currentRide.status === 'IN_PROGRESS' ? 'success.main' : 'primary.main'
 
   return (
     <Box p={3} display="flex" gap={3}>
@@ -121,6 +275,12 @@ export default function DriverRidePage() {
                 {formatCurrency(currentRide.driverRevenue || currentRide.estimatedPrice * 0.75)}
               </Typography>
             </Box>
+
+            {routePhaseLabel && activeRouteDistanceKm !== null && (
+              <Alert severity="info" sx={{ mt: 2, borderRadius: 2 }}>
+                {routePhaseLabel}: <strong>{activeRouteDistanceKm.toFixed(2)} km</strong>
+              </Alert>
+            )}
 
             {step && (
               <Button
@@ -172,9 +332,13 @@ export default function DriverRidePage() {
       <Box sx={{ width: 480, height: 500, borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
         <MapContainer center={mapCenter} zoom={14} style={{ height: '100%', width: '100%' }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <RouteAutoFit points={activeRoutePoints} fallbackCenter={mapCenter} />
           <Marker position={[currentRide.pickupLat, currentRide.pickupLng]} />
           <Marker position={[currentRide.destinationLat, currentRide.destinationLng]} />
-          {coords && <Marker position={coords} />}
+          {activeRoutePoints.length > 1 && (
+            <Polyline positions={activeRoutePoints} pathOptions={{ color: routeColor }} weight={5} opacity={0.85} />
+          )}
+          {coords && <MovingMarker position={coords} />}
         </MapContainer>
       </Box>
     </Box>
