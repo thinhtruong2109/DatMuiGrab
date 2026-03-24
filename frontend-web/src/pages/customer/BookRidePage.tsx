@@ -70,6 +70,8 @@ export default function BookRidePage() {
   const [selectMode, setSelectMode] = useState<SelectMode>(null)
   const [pickup, setPickup] = useState<{ lat: number; lng: number; address: string } | null>(null)
   const [destination, setDestination] = useState<{ lat: number; lng: number; address: string } | null>(null)
+  const [pickupInput, setPickupInput] = useState('')
+  const [destinationInput, setDestinationInput] = useState('')
   const [routePoints, setRoutePoints] = useState<[number, number][]>([])
   const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(null)
   const [estimates, setEstimates] = useState<CompanyEstimate[]>([])
@@ -77,6 +79,8 @@ export default function BookRidePage() {
   const [focusPosition, setFocusPosition] = useState<[number, number] | null>(null)
   const [fetchedEstimates, setFetchedEstimates] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [pickupSearching, setPickupSearching] = useState(false)
+  const [destinationSearching, setDestinationSearching] = useState(false)
   const [booking, setBooking] = useState(false)
   const [error, setError] = useState('')
 
@@ -107,14 +111,72 @@ export default function BookRidePage() {
     }
   }
 
+  const geocodeAddress = async (query: string): Promise<{ lat: number; lng: number; address: string } | null> => {
+    try {
+      const encoded = encodeURIComponent(query.trim())
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1`)
+      const data = await res.json()
+      if (!Array.isArray(data) || data.length === 0) return null
+
+      const item = data[0]
+      const lat = Number(item.lat)
+      const lng = Number(item.lon)
+      if (Number.isNaN(lat) || Number.isNaN(lng)) return null
+
+      return {
+        lat,
+        lng,
+        address: item.display_name || query,
+      }
+    } catch {
+      return null
+    }
+  }
+
   const handleMapPick = async (lat: number, lng: number) => {
     const address = await reverseGeocode(lat, lng)
     if (selectMode === 'pickup') {
       setPickup({ lat, lng, address })
+      setPickupInput(address)
     } else if (selectMode === 'destination') {
       setDestination({ lat, lng, address })
+      setDestinationInput(address)
     }
     setSelectMode(null)
+  }
+
+  const applyAddressToPoint = async (mode: 'pickup' | 'destination') => {
+    const rawInput = mode === 'pickup' ? pickupInput : destinationInput
+    const query = rawInput.trim()
+    if (!query) {
+      setError(mode === 'pickup' ? 'Vui lòng nhập địa chỉ điểm đón' : 'Vui lòng nhập địa chỉ điểm đến')
+      return
+    }
+
+    setError('')
+    if (mode === 'pickup') setPickupSearching(true)
+    else setDestinationSearching(true)
+
+    try {
+      const point = await geocodeAddress(query)
+      if (!point) {
+        setError(`Không tìm thấy địa chỉ cho ${mode === 'pickup' ? 'điểm đón' : 'điểm đến'}, vui lòng thử chi tiết hơn`)
+        return
+      }
+
+      if (mode === 'pickup') {
+        setPickup(point)
+        setPickupInput(point.address)
+      } else {
+        setDestination(point)
+        setDestinationInput(point.address)
+      }
+      setFocusPosition([point.lat, point.lng])
+      setSelectMode(null)
+    } finally {
+      if (mode === 'pickup') setPickupSearching(false)
+      else setDestinationSearching(false)
+    }
   }
 
   // Fetch route when both points set
@@ -195,6 +257,7 @@ export default function BookRidePage() {
   const useMyLocation = () => {
     if (myCoords) {
       setPickup({ lat: myCoords[0], lng: myCoords[1], address: 'Vị trí của bạn' })
+      setPickupInput('Vị trí của bạn')
       setFocusPosition([myCoords[0], myCoords[1]])
     }
   }
@@ -206,7 +269,7 @@ export default function BookRidePage() {
         <Box p={3}>
           <Typography variant="h5" fontWeight={700} mb={0.5}>Đặt xe</Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
-            Nhấn vào bản đồ hoặc dùng nút bên dưới để chọn điểm
+            Nhấn vào bản đồ hoặc nhập địa chỉ để chọn điểm
           </Typography>
 
           {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
@@ -233,6 +296,29 @@ export default function BookRidePage() {
                 </Typography>
               </Box>
             </Paper>
+            <Box mt={1} display="flex" gap={1}>
+              <TextField
+                size="small"
+                fullWidth
+                placeholder="Nhập địa chỉ điểm đón"
+                value={pickupInput}
+                onChange={(e) => setPickupInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    void applyAddressToPoint('pickup')
+                  }
+                }}
+              />
+              <Button
+                variant="outlined"
+                onClick={() => void applyAddressToPoint('pickup')}
+                disabled={pickupSearching}
+                sx={{ minWidth: 84 }}
+              >
+                {pickupSearching ? <CircularProgress size={16} /> : 'Tìm'}
+              </Button>
+            </Box>
             <Button
               size="small"
               startIcon={<MyLocationIcon />}
@@ -265,6 +351,30 @@ export default function BookRidePage() {
                 </Typography>
               </Box>
             </Paper>
+            <Box mt={1} display="flex" gap={1}>
+              <TextField
+                size="small"
+                fullWidth
+                placeholder="Nhập địa chỉ điểm đến"
+                value={destinationInput}
+                onChange={(e) => setDestinationInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    void applyAddressToPoint('destination')
+                  }
+                }}
+              />
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => void applyAddressToPoint('destination')}
+                disabled={destinationSearching}
+                sx={{ minWidth: 84 }}
+              >
+                {destinationSearching ? <CircularProgress size={16} /> : 'Tìm'}
+              </Button>
+            </Box>
           </Box>
 
           {selectMode && (
