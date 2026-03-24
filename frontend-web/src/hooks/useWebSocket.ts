@@ -15,6 +15,13 @@ interface UseWebSocketOptions {
   onDisconnect?: () => void
 }
 
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || '/api'
+const apiBaseUrlNoTrailingSlash = apiBaseUrl.replace(/\/$/, '')
+const normalizedApiBaseUrl = /\/api$/i.test(apiBaseUrlNoTrailingSlash)
+  ? apiBaseUrlNoTrailingSlash
+  : `${apiBaseUrlNoTrailingSlash}/api`
+const sockJsEndpoint = `${normalizedApiBaseUrl.replace(/\/api$/i, '')}/ws`
+
 export function useWebSocket(options?: UseWebSocketOptions) {
   const clientRef = useRef<Client | null>(null)
   const subscriptionsRef = useRef<PendingSubscription[]>([])
@@ -40,7 +47,7 @@ export function useWebSocket(options?: UseWebSocketOptions) {
     }
 
     const client = new Client({
-      webSocketFactory: () => new SockJS('/ws'),
+      webSocketFactory: () => new SockJS(sockJsEndpoint),
       connectHeaders: { Authorization: `Bearer ${accessToken}` },
       reconnectDelay: 3000,
       onConnect: () => {
