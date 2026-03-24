@@ -90,6 +90,7 @@ pipeline {
     post {
         always {
             sh '''
+                docker buildx prune -f
                 docker builder prune -f --filter "until=24h"
                 docker image prune -f
             '''
