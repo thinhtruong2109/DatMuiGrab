@@ -4,14 +4,21 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import dat_mui_grab.datmuigrab.entity.Driver;
+import dat_mui_grab.datmuigrab.entity.DriverCompanyRegistration;
 import dat_mui_grab.datmuigrab.entity.Ride;
+import dat_mui_grab.datmuigrab.entity.enums.DriverOnlineStatus;
+import dat_mui_grab.datmuigrab.entity.enums.RegistrationStatus;
+import dat_mui_grab.datmuigrab.entity.enums.RideStatus;
+import dat_mui_grab.datmuigrab.repository.DriverCompanyRegistrationRepository;
 import dat_mui_grab.datmuigrab.repository.DriverRepository;
+import dat_mui_grab.datmuigrab.repository.RideRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 public class MatchingService {
 
     private final DriverRepository driverRepository;
+    private final DriverCompanyRegistrationRepository registrationRepository;
+    private final RideRepository rideRepository;
     private final RedisService redisService;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -52,6 +61,31 @@ public class MatchingService {
             log.info("Da gui yeu cau chuyen {} toi tai xe {}", ride.getId(), driver.getId());
             redisService.releaseDriverLock(driver.getId().toString());
             break;
+        }
+    }
+
+    @Async
+    public void tryMatchWhenDriverOnline(UUID driverId) {
+        Driver driver = driverRepository.findById(driverId).orElse(null);
+        if (driver == null || driver.getOnlineStatus() != DriverOnlineStatus.ONLINE) {
+            return;
+        }
+
+        List<DriverCompanyRegistration> activeRegs = registrationRepository.findAllByDriverAndStatus(
+                driver,
+                RegistrationStatus.ACTIVE
+        );
+
+        for (DriverCompanyRegistration reg : activeRegs) {
+            Ride searchingRide = rideRepository.findFirstByCompanyIdAndStatusOrderByCreatedAtAsc(
+                    reg.getCompany().getId(),
+                    RideStatus.SEARCHING
+            ).orElse(null);
+
+            if (searchingRide != null) {
+                findAndNotifyDriver(searchingRide);
+                break;
+            }
         }
     }
 

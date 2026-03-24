@@ -12,6 +12,7 @@ import dat_mui_grab.datmuigrab.entity.Driver;
 import dat_mui_grab.datmuigrab.entity.Ride;
 import dat_mui_grab.datmuigrab.entity.TransportCompany;
 import dat_mui_grab.datmuigrab.entity.User;
+import dat_mui_grab.datmuigrab.entity.enums.RideStatus;
 
 @Repository
 public interface RideRepository extends JpaRepository<Ride, UUID> {
@@ -28,4 +29,7 @@ public interface RideRepository extends JpaRepository<Ride, UUID> {
 
     @EntityGraph(attributePaths = {"customer", "company", "driver", "driver.user"})
     List<Ride> findAllByCompanyOrderByCreatedAtDesc(TransportCompany company);
+
+    @EntityGraph(attributePaths = {"customer", "company", "driver", "driver.user"})
+    Optional<Ride> findFirstByCompanyIdAndStatusOrderByCreatedAtAsc(UUID companyId, RideStatus status);
 }

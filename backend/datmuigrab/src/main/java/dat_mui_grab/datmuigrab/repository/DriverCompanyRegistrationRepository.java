@@ -19,6 +19,9 @@ public interface DriverCompanyRegistrationRepository extends JpaRepository<Drive
     @EntityGraph(attributePaths = {"driver", "company"})
     List<DriverCompanyRegistration> findAllByDriver(Driver driver);
 
+    @EntityGraph(attributePaths = {"company"})
+    List<DriverCompanyRegistration> findAllByDriverAndStatus(Driver driver, RegistrationStatus status);
+
     @EntityGraph(attributePaths = {"driver", "company"})
     List<DriverCompanyRegistration> findAllByCompanyAndStatus(TransportCompany company, RegistrationStatus status);
 

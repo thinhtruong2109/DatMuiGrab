@@ -39,6 +39,7 @@ public class DriverService {
     private final DriverCompanyRegistrationRepository registrationRepository;
     private final TransportCompanyRepository companyRepository;
     private final RedisService redisService;
+    private final MatchingService matchingService;
 
     public DriverResponse getMe(UUID userId) {
         Driver driver = findByUserId(userId);
@@ -78,6 +79,8 @@ public class DriverService {
 
         if (request.getStatus() == DriverOnlineStatus.OFFLINE) {
             redisService.removeDriverLocation(driver.getId().toString());
+        } else if (request.getStatus() == DriverOnlineStatus.ONLINE) {
+            matchingService.tryMatchWhenDriverOnline(driver.getId());
         }
     }
 
