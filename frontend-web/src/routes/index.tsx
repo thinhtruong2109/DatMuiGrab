@@ -74,6 +74,8 @@ const adminNavItems = [
   { label: 'Ví công ty', path: '/admin/wallets', icon: <AccountBalanceWalletIcon fontSize="small" /> },
 ]
 
+const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/'
+
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
   { path: '/login', element: <LoginPage /> },
@@ -163,4 +165,6 @@ export const router = createBrowserRouter([
       { path: 'wallets', element: <AdminWalletsPage /> },
     ],
   },
-])
+], {
+  basename,
+})
