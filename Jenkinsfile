@@ -15,7 +15,7 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    env.BUILD_BACKEND  = changedFiles.contains('backend/')  ? 'true' : 'false'
+                    env.BUILD_BACKEND  = changedFiles.contains('backend/') ? 'true' : 'false'
                     env.BUILD_FRONTEND = changedFiles.contains('frontend-web/') ? 'true' : 'false'
 
                     echo "Changed files:\n${changedFiles}"
@@ -40,7 +40,6 @@ pipeline {
             when { expression { env.BUILD_BACKEND == 'true' } }
             steps {
                 sh '''
-                    docker buildx create --name builder --use >/dev/null 2>&1 || docker buildx use builder
                     docker buildx build \
                       --platform linux/amd64 \
                       -t ${BACKEND_IMAGE} \
@@ -54,7 +53,6 @@ pipeline {
             when { expression { env.BUILD_FRONTEND == 'true' } }
             steps {
                 sh '''
-                    docker buildx create --name builder --use >/dev/null 2>&1 || docker buildx use builder
                     docker buildx build \
                       --platform linux/amd64 \
                       -t ${FRONTEND_IMAGE} \
@@ -67,11 +65,8 @@ pipeline {
         stage('Deploy backend') {
             when { expression { env.BUILD_BACKEND == 'true' } }
             steps {
-                dir("/home/ubuntu/grabdatmui") {   // ✅ FIX QUAN TRỌNG
+                dir("/home/ubuntu/grabdatmui") {
                     sh '''
-                        pwd
-                        ls -l
-
                         docker pull ${BACKEND_IMAGE}
                         docker compose up -d backend
                     '''
@@ -82,7 +77,7 @@ pipeline {
         stage('Deploy frontend') {
             when { expression { env.BUILD_FRONTEND == 'true' } }
             steps {
-                dir("/home/ubuntu/grabdatmui") {   // ✅ FIX QUAN TRỌNG
+                dir("/home/ubuntu/grabdatmui") {
                     sh '''
                         docker pull ${FRONTEND_IMAGE}
                         docker compose up -d frontend
@@ -99,7 +94,5 @@ pipeline {
                 docker image prune -f
             '''
         }
-        success { echo 'Deploy thanh cong!' }
-        failure { echo 'Deploy that bai, kiem tra log!' }
     }
 }

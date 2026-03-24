@@ -4,7 +4,11 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const vitePort = Number(env.VITE_PORT)
+  const vitePort = Number(env.VITE_PORT) || 5173
+  const allowedHosts = (env.ALLOWED_HOST || 'localhost')
+    .split(',')
+    .map((host) => host.trim())
+    .filter(Boolean)
 
   return {
     plugins: [react()],
@@ -19,6 +23,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: vitePort,
       host: '0.0.0.0',
+      allowedHosts,
       proxy: {
         '/api': {
           target: 'http://localhost:8080',
