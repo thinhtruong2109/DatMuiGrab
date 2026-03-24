@@ -1,7 +1,10 @@
 import axios from 'axios'
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || '/api'
-const normalizedApiBaseUrl = apiBaseUrl.replace(/\/$/, '')
+const apiBaseUrlNoTrailingSlash = apiBaseUrl.replace(/\/$/, '')
+const normalizedApiBaseUrl = /\/api$/i.test(apiBaseUrlNoTrailingSlash)
+  ? apiBaseUrlNoTrailingSlash
+  : `${apiBaseUrlNoTrailingSlash}/api`
 
 const axiosInstance = axios.create({
   baseURL: normalizedApiBaseUrl,
