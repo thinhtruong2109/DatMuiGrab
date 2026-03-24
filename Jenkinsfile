@@ -15,12 +15,10 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    env.BUILD_BACKEND = (changedFiles.contains('backend/datmuigrab/') || changedFiles.contains('docker-compose.yml') || changedFiles.contains('.env')) ? 'true' : 'false'
-                    env.BUILD_FRONTEND = (changedFiles.contains('frontend-web/') || changedFiles.contains('docker-compose.yml')) ? 'true' : 'false'
+                    env.BUILD_BACKEND  = changedFiles.contains('backend/')  ? 'true' : 'false'
+                    env.BUILD_FRONTEND = changedFiles.contains('frontend-web/') ? 'true' : 'false'
 
                     echo "Changed files:\n${changedFiles}"
-                    echo "Build backend: ${env.BUILD_BACKEND}"
-                    echo "Build frontend: ${env.BUILD_FRONTEND}"
                 }
             }
         }
@@ -42,9 +40,9 @@ pipeline {
             when { expression { env.BUILD_BACKEND == 'true' } }
             steps {
                 sh '''
-                    docker buildx create --name datmuigrab-builder --use >/dev/null 2>&1 || docker buildx use datmuigrab-builder
+                    docker buildx create --name builder --use >/dev/null 2>&1 || docker buildx use builder
                     docker buildx build \
-                      --platform linux/amd64,linux/arm64 \
+                      --platform linux/amd64 \
                       -t ${BACKEND_IMAGE} \
                       --push \
                       ./backend/datmuigrab
@@ -56,9 +54,9 @@ pipeline {
             when { expression { env.BUILD_FRONTEND == 'true' } }
             steps {
                 sh '''
-                    docker buildx create --name datmuigrab-builder --use >/dev/null 2>&1 || docker buildx use datmuigrab-builder
+                    docker buildx create --name builder --use >/dev/null 2>&1 || docker buildx use builder
                     docker buildx build \
-                      --platform linux/amd64,linux/arm64 \
+                      --platform linux/amd64 \
                       -t ${FRONTEND_IMAGE} \
                       --push \
                       ./frontend-web
@@ -69,11 +67,12 @@ pipeline {
         stage('Deploy backend') {
             when { expression { env.BUILD_BACKEND == 'true' } }
             steps {
-                dir("/home/ubuntu/datmuigrab") {
+                dir("/home/ubuntu/grabdatmui") {   // ✅ FIX QUAN TRỌNG
                     sh '''
+                        pwd
+                        ls -l
+
                         docker pull ${BACKEND_IMAGE}
-                        docker compose stop backend
-                        docker compose rm -f backend
                         docker compose up -d backend
                     '''
                 }
@@ -83,11 +82,9 @@ pipeline {
         stage('Deploy frontend') {
             when { expression { env.BUILD_FRONTEND == 'true' } }
             steps {
-                dir("/home/ubuntu/datmuigrab") {
+                dir("/home/ubuntu/grabdatmui") {   // ✅ FIX QUAN TRỌNG
                     sh '''
                         docker pull ${FRONTEND_IMAGE}
-                        docker compose stop frontend
-                        docker compose rm -f frontend
                         docker compose up -d frontend
                     '''
                 }
@@ -102,11 +99,7 @@ pipeline {
                 docker image prune -f
             '''
         }
-        success {
-            echo 'Deploy thanh cong!'
-        }
-        failure {
-            echo 'Deploy that bai, kiem tra log!'
-        }
+        success { echo 'Deploy thanh cong!' }
+        failure { echo 'Deploy that bai, kiem tra log!' }
     }
 }
