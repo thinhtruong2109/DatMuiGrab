@@ -124,7 +124,7 @@ export default function DriverRidePage() {
   const { currentRide, setCurrentRide } = useRideStore()
   const { messages, addMessage, setMessages, clearMessages } = useChatStore()
   const { user } = useAuthStore()
-  const { coords } = useGeolocation(true)
+  const { coords, error: geoError, loading: geoLoading, requestLocation } = useGeolocation(true)
   const { subscribe, send } = useWebSocket()
   const [message, setMessage] = useState('')
   const [updating, setUpdating] = useState(false)
@@ -216,6 +216,26 @@ export default function DriverRidePage() {
     if (!message.trim() || !currentRide) return
     send(`/app/chat/${currentRide.id}`, { message })
     setMessage('')
+  }
+
+  if (geoLoading && !coords) {
+    return (
+      <Box p={3} display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight={400}>
+        <CircularProgress size={30} />
+        <Typography color="text.secondary" mt={2}>Đang lấy vị trí GPS...</Typography>
+      </Box>
+    )
+  }
+
+  if (!coords) {
+    return (
+      <Box p={3} display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight={400}>
+        <Alert severity="error" sx={{ mb: 2, maxWidth: 520, width: '100%' }}>
+          {geoError || 'Chưa có vị trí GPS. Vui lòng cấp quyền vị trí để tiếp tục chạy xe.'}
+        </Alert>
+        <Button variant="contained" onClick={requestLocation}>Cấp quyền vị trí</Button>
+      </Box>
+    )
   }
 
   if (!currentRide) {
