@@ -109,25 +109,54 @@ public class MatchingService {
     }
 
     private List<DriverWithDistance> rankDrivers(List<Driver> drivers, Ride ride) {
+        log.info("rankDrivers start: rideId={}, candidateCount={}", ride.getId(), drivers.size());
+
+        if (ride.getPickupLat() == null || ride.getPickupLng() == null) {
+            log.warn("rankDrivers stop: ride {} has null pickup coordinates lat={}, lng={}",
+                    ride.getId(), ride.getPickupLat(), ride.getPickupLng());
+            return new ArrayList<>();
+        }
+
         double pickupLat = ride.getPickupLat().doubleValue();
         double pickupLng = ride.getPickupLng().doubleValue();
+        log.info("rankDrivers pickup coordinates: lat={}, lng={}", pickupLat, pickupLng);
 
         List<DriverWithDistance> result = new ArrayList<>();
 
-        for (Driver driver : drivers) {
+        for (int i = 0; i < drivers.size(); i++) {
+            Driver driver = drivers.get(i);
+            log.info("rankDrivers candidate[{}/{}]: driverId={}", i + 1, drivers.size(), driver.getId());
+
             String locationStr = redisService.getDriverLocation(driver.getId().toString());
-            if (locationStr == null) continue;
+            log.info("rankDrivers candidate driverId={} redisLocationRaw={}", driver.getId(), locationStr);
+
+            if (locationStr == null || locationStr.isBlank()) {
+                log.info("rankDrivers skip driverId={} because Redis location is null/blank", driver.getId());
+                continue;
+            }
 
             try {
                 String[] parts = locationStr.split(",");
+                if (parts.length < 2) {
+                    log.warn("rankDrivers skip driverId={} because location format invalid: {}", driver.getId(), locationStr);
+                    continue;
+                }
+
                 double lat = Double.parseDouble(parts[0]);
                 double lng = Double.parseDouble(parts[1]);
                 double distance = haversine(pickupLat, pickupLng, lat, lng);
+
+                log.info("rankDrivers candidate driverId={} parsedLocation=({}, {}), distanceKm={}",
+                        driver.getId(), lat, lng, String.format("%.3f", distance));
+
                 result.add(new DriverWithDistance(driver, distance));
+                log.info("rankDrivers add driverId={} into ranked list", driver.getId());
             } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
                 log.warn("Loi parse vi tri tai xe {}: {}", driver.getId(), e.getMessage());
             }
         }
+
+        log.info("rankDrivers pre-sort size={}", result.size());
 
         result.sort(Comparator
                 .comparingDouble(DriverWithDistance::getDistance)
@@ -136,6 +165,8 @@ public class MatchingService {
                     return score != null ? score.doubleValue() : 0.0;
                 }, Comparator.reverseOrder())
         );
+
+        log.info("rankDrivers done: rideId={}, rankedSize={}", ride.getId(), result.size());
 
         return result;
     }
