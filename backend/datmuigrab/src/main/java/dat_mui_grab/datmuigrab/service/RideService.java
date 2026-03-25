@@ -61,6 +61,7 @@ public class RideService {
 
     @Transactional
     public RideResponse bookRide(UUID customerId, BookRideRequest request) {
+        log.info("bookRide Called for ride {}");
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay nguoi dung"));
 

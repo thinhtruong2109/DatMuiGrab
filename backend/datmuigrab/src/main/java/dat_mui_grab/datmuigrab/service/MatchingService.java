@@ -38,7 +38,8 @@ public class MatchingService {
         List<Driver> candidates = driverRepository.findAvailableDriversByCompanyId(
                 ride.getCompany().getId()
         );
-
+        
+        log.info("findAndNotifyDriver called {}");
         if (candidates.isEmpty()) {
             log.info("Khong tim thay tai xe cho chuyen {}", ride.getId());
             return;
