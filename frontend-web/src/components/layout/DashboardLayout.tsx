@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   Box, Drawer, AppBar, Toolbar, Typography, List, ListItem,
@@ -10,6 +10,11 @@ import LogoutIcon from '@mui/icons-material/Logout'
 import PersonIcon from '@mui/icons-material/Person'
 import { useAuthStore } from '@/store/authStore'
 import { authApi } from '@/api/auth.api'
+import { driverApi } from '@/api/driver.api'
+import { rideApi } from '@/api/ride.api'
+import { useRideStore } from '@/store/rideStore'
+import { useWebSocket } from '@/hooks/useWebSocket'
+import type { Ride } from '@/types'
 
 const DRAWER_WIDTH = 240
 
@@ -29,9 +34,57 @@ interface Props {
 
 export default function DashboardLayout({ navItems, title, roleColor = '#00A651', roleLabel }: Props) {
   const { user, clearAuth } = useAuthStore()
+  const { setCurrentRide } = useRideStore()
+  const { subscribe } = useWebSocket()
   const navigate = useNavigate()
   const location = useLocation()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+
+  useEffect(() => {
+    if (!user || user.role !== 'DRIVER') return
+
+    let cancelled = false
+    let unsubscribeNewRide: (() => void) | undefined
+
+    const loadDriverRealtime = async () => {
+      try {
+        const [driver, rides] = await Promise.all([
+          driverApi.getMe(),
+          driverApi.getMyRides(),
+        ])
+
+        if (cancelled) return
+
+        const activeRide = rides.find((ride) => ride.status !== 'COMPLETED' && ride.status !== 'CANCELLED')
+        if (activeRide) {
+          setCurrentRide(activeRide)
+        }
+
+        unsubscribeNewRide = subscribe(`/topic/driver/${driver.id}/new-ride`, async (payload: Ride | string) => {
+          if (typeof payload === 'string') {
+            try {
+              const ride = await rideApi.getById(payload)
+              if (!cancelled) setCurrentRide(ride)
+            } catch {
+              // ignore transient fetch error
+            }
+            return
+          }
+
+          if (!cancelled) setCurrentRide(payload)
+        })
+      } catch {
+        // ignore transient bootstrap errors
+      }
+    }
+
+    loadDriverRealtime()
+
+    return () => {
+      cancelled = true
+      unsubscribeNewRide?.()
+    }
+  }, [user?.id, user?.role, subscribe, setCurrentRide])
 
   const handleLogout = async () => {
     await authApi.logout().catch(() => {})

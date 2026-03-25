@@ -8,10 +8,8 @@ import StarIcon from '@mui/icons-material/Star'
 import RouteIcon from '@mui/icons-material/Route'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import { driverApi } from '@/api/driver.api'
-import { rideApi } from '@/api/ride.api'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { useWebSocket } from '@/hooks/useWebSocket'
-import { useRideStore } from '@/store/rideStore'
 import { formatCurrency, rideStatusLabel } from '@/utils/format'
 import StatCard from '@/components/common/StatCard'
 import PageHeader from '@/components/common/PageHeader'
@@ -23,8 +21,7 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
   const { coords } = useGeolocation(true)
-  const { setCurrentRide } = useRideStore()
-  const { subscribe, send } = useWebSocket()
+  const { send } = useWebSocket()
 
   useEffect(() => {
     Promise.all([
@@ -44,25 +41,6 @@ export default function DriverDashboard() {
     }, 3000)
     return () => clearInterval(interval)
   }, [driver?.onlineStatus, coords])
-
-  // Listen for new ride requests
-  useEffect(() => {
-    if (!driver) return
-    const unsub = subscribe(`/topic/driver/${driver.id}/new-ride`, async (payload: Ride | string) => {
-      if (typeof payload === 'string') {
-        try {
-          const ride = await rideApi.getById(payload)
-          setCurrentRide(ride)
-        } catch {
-          // ignore transient fetch error
-        }
-        return
-      }
-
-      setCurrentRide(payload)
-    })
-    return unsub
-  }, [driver?.id])
 
   const handleToggleOnline = async () => {
     if (!driver) return
