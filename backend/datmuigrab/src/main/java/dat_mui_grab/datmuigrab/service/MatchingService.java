@@ -40,11 +40,16 @@ public class MatchingService {
         );
         
         log.info("findAndNotifyDriver called {}");
+
         if (candidates.isEmpty()) {
             log.info("Khong tim thay tai xe cho chuyen {}", ride.getId());
             return;
         }
-        log.info("candidates: ",candidates,"        ride:  {}",ride);
+
+        log.info("candidates: ",candidates);
+        log.info("ride: ",ride);
+
+
         List<DriverWithDistance> ranked = rankDrivers(candidates, ride);
         log.info("ranked driver {}",ranked);
         for (DriverWithDistance dwd : ranked) {
@@ -66,6 +71,7 @@ public class MatchingService {
             redisService.releaseDriverLock(driver.getId().toString());
             break;
         }
+        log.info("__________________________________________________");
     }
 
     @Async
