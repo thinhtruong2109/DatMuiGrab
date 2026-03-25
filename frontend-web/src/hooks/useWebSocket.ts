@@ -17,9 +17,10 @@ interface UseWebSocketOptions {
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || '/api'
 const apiBaseUrlNoTrailingSlash = apiBaseUrl.replace(/\/$/, '')
+const apiBaseUrlWithoutLegacyPrefix = apiBaseUrlNoTrailingSlash.replace(/\/(datmuigrab|grabdatmui)-api(?=\/|$)/i, '')
 const normalizedApiBaseUrl = /\/api$/i.test(apiBaseUrlNoTrailingSlash)
-  ? apiBaseUrlNoTrailingSlash
-  : `${apiBaseUrlNoTrailingSlash}/api`
+  ? apiBaseUrlWithoutLegacyPrefix
+  : `${apiBaseUrlWithoutLegacyPrefix || ''}/api`
 const sockJsEndpoint = `${normalizedApiBaseUrl.replace(/\/api$/i, '')}/ws`
 
 export function useWebSocket(options?: UseWebSocketOptions) {

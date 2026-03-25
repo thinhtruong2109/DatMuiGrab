@@ -41,8 +41,8 @@ app.cors.allowed-origins=${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 # ===============================================
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
-spring.mail.username=truongquangthinh21092004@gmail.com
-spring.mail.password=kbkm fqub fybp zpbc
+spring.mail.username=${MAIL_USERNAME:}
+spring.mail.password=${MAIL_PASSWORD:}
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 
