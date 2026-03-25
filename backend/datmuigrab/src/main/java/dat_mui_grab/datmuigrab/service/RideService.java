@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -165,6 +166,7 @@ public class RideService {
             if (!locked) {
                 throw new AppException(ErrorCode.VALIDATION_ERROR, "Tai xe dang ban, khong the nhan chuyen");
             }
+                        redisService.clearPendingRideForDriver(driver.getId().toString());
             ride.setDriver(driver);
             driver.setOnlineStatus(DriverOnlineStatus.BUSY);
             redisService.setDriverBusy(driver.getId().toString());
@@ -305,6 +307,44 @@ public class RideService {
         return rideRepository.findAllByDriverOrderByCreatedAtDesc(driver)
                 .stream().map(this::mapToResponse).collect(Collectors.toList());
     }
+
+        public Optional<RideResponse> getDriverPendingRide(UUID driverUserId) {
+                Driver driver = driverRepository.findByUserId(driverUserId)
+                                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay tai xe"));
+
+                List<RideStatus> activeStatuses = List.of(
+                                RideStatus.MATCHED,
+                                RideStatus.DRIVER_ARRIVING,
+                                RideStatus.IN_PROGRESS
+                );
+
+                Optional<RideResponse> activeAssignedRide = rideRepository
+                                .findFirstByDriverAndStatusInOrderByCreatedAtDesc(driver, activeStatuses)
+                                .map(this::mapToResponse);
+
+                if (activeAssignedRide.isPresent()) {
+                        return activeAssignedRide;
+                }
+
+                String pendingRideId = redisService.getPendingRideForDriver(driver.getId().toString());
+                if (pendingRideId == null || pendingRideId.isBlank()) {
+                        return Optional.empty();
+                }
+
+                try {
+                        UUID rideId = UUID.fromString(pendingRideId);
+                        Ride pendingRide = rideRepository.findById(rideId).orElse(null);
+                        if (pendingRide == null || pendingRide.getStatus() != RideStatus.SEARCHING) {
+                                redisService.clearPendingRideForDriver(driver.getId().toString());
+                                return Optional.empty();
+                        }
+
+                        return Optional.of(mapToResponse(pendingRide));
+                } catch (IllegalArgumentException ex) {
+                        redisService.clearPendingRideForDriver(driver.getId().toString());
+                        return Optional.empty();
+                }
+        }
 
     public List<RideResponse> getByCompany(UUID companyId) {
         TransportCompany company = companyRepository.findById(companyId)

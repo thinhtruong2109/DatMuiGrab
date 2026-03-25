@@ -19,4 +19,11 @@ export const rideApi = {
 
   getByCompany: (companyId: string, params?: { page?: number; size?: number }) =>
     axiosInstance.get<Ride[]>(`/rides/company/${companyId}`, { params }).then((r) => r.data),
+
+  getDriverPendingRide: () =>
+    axiosInstance
+      .get<Ride>('/rides/driver/pending', {
+        validateStatus: (status) => status === 200 || status === 204,
+      })
+      .then((r) => (r.status === 204 ? null : r.data)),
 }
