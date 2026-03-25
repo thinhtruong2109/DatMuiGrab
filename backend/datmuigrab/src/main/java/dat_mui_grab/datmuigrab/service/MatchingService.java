@@ -39,22 +39,22 @@ public class MatchingService {
                 ride.getCompany().getId()
         );
         
-        log.info("findAndNotifyDriver called {}");
+        log.info("findAndNotifyDriver called for rideId={}", ride.getId());
 
         if (candidates.isEmpty()) {
             log.info("Khong tim thay tai xe cho chuyen {}", ride.getId());
             return;
         }
 
-        log.info("candidates: ",candidates);
-        log.info("ride: ",ride);
+        log.info("candidates(size={}): {}", candidates.size(), candidates);
+        log.info("ride: {}", ride);
 
 
         List<DriverWithDistance> ranked = rankDrivers(candidates, ride);
-        log.info("ranked driver {}",ranked);
+        log.info("ranked drivers(size={}): {}", ranked.size(), ranked);
         for (DriverWithDistance dwd : ranked) {
             Driver driver = dwd.getDriver();
-            log.info("targeted driver {}",driver);
+            log.info("targeted driver: {}", driver);
             boolean locked = redisService.acquireDriverLock(driver.getId().toString());
             if (!locked) {
                 continue;
