@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   Box, Drawer, AppBar, Toolbar, Typography, List, ListItem,
@@ -35,26 +35,10 @@ interface Props {
 export default function DashboardLayout({ navItems, title, roleColor = '#00A651', roleLabel }: Props) {
   const { user, clearAuth } = useAuthStore()
   const { setCurrentRide } = useRideStore()
+  const { subscribe } = useWebSocket()
   const navigate = useNavigate()
   const location = useLocation()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-
-  const restorePendingRide = useCallback(async () => {
-    if (!user || user.role !== 'DRIVER') return
-
-    try {
-      const pendingRide = await rideApi.getDriverPendingRide()
-      if (pendingRide) {
-        setCurrentRide(pendingRide)
-      }
-    } catch {
-      // ignore transient restore errors
-    }
-  }, [user?.id, user?.role, setCurrentRide])
-
-  const { subscribe } = useWebSocket({
-    onConnect: restorePendingRide,
-  })
 
   useEffect(() => {
     if (!user || user.role !== 'DRIVER') return
@@ -74,8 +58,6 @@ export default function DashboardLayout({ navItems, title, roleColor = '#00A651'
         const activeRide = rides.find((ride) => ride.status !== 'COMPLETED' && ride.status !== 'CANCELLED')
         if (activeRide) {
           setCurrentRide(activeRide)
-        } else {
-          await restorePendingRide()
         }
 
         unsubscribeNewRide = subscribe(`/topic/driver/${driver.id}/new-ride`, async (payload: Ride | string) => {
@@ -102,7 +84,7 @@ export default function DashboardLayout({ navItems, title, roleColor = '#00A651'
       cancelled = true
       unsubscribeNewRide?.()
     }
-  }, [user?.id, user?.role, subscribe, setCurrentRide, restorePendingRide])
+  }, [user?.id, user?.role, subscribe, setCurrentRide])
 
   const handleLogout = async () => {
     await authApi.logout().catch(() => {})

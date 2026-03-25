@@ -1,9 +1,12 @@
 package dat_mui_grab.datmuigrab.controller;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
+import dat_mui_grab.datmuigrab.dto.request.BookRideRequest;
+import dat_mui_grab.datmuigrab.dto.request.CancelRideRequest;
+import dat_mui_grab.datmuigrab.dto.request.UpdateRideStatusRequest;
+import dat_mui_grab.datmuigrab.dto.response.RideResponse;
+import dat_mui_grab.datmuigrab.service.RideService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,13 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import dat_mui_grab.datmuigrab.dto.request.BookRideRequest;
-import dat_mui_grab.datmuigrab.dto.request.CancelRideRequest;
-import dat_mui_grab.datmuigrab.dto.request.UpdateRideStatusRequest;
-import dat_mui_grab.datmuigrab.dto.response.RideResponse;
-import dat_mui_grab.datmuigrab.service.RideService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/rides")
@@ -71,12 +69,5 @@ public class RideController {
     @PreAuthorize("hasRole('TRANSPORT_COMPANY') or hasRole('ADMIN')")
     public ResponseEntity<List<RideResponse>> getByCompany(@PathVariable UUID companyId) {
         return ResponseEntity.ok(rideService.getByCompany(companyId));
-    }
-
-    @GetMapping("/driver/pending")
-    @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<RideResponse> getDriverPendingRide(@AuthenticationPrincipal String userId) {
-        Optional<RideResponse> ride = rideService.getDriverPendingRide(UUID.fromString(userId));
-        return ride.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
     }
 }

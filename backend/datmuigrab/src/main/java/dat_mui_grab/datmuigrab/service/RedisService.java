@@ -12,7 +12,6 @@ public class RedisService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String GEO_KEY = "drivers:geo";
-    private static final Duration DRIVER_PENDING_RIDE_TTL = Duration.ofMinutes(2);
 
     public RedisService(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
@@ -83,23 +82,5 @@ public class RedisService {
 
     public boolean isDriverBusy(String driverId) {
         return Boolean.TRUE.equals(redisTemplate.hasKey("driver:status:" + driverId));
-    }
-
-    // ── Driver pending ride recovery ──────────────────────
-    public void setPendingRideForDriver(String driverId, String rideId) {
-        redisTemplate.opsForValue().set(
-                "driver:pending-ride:" + driverId,
-                rideId,
-                DRIVER_PENDING_RIDE_TTL
-        );
-    }
-
-    public String getPendingRideForDriver(String driverId) {
-        Object val = redisTemplate.opsForValue().get("driver:pending-ride:" + driverId);
-        return val != null ? val.toString() : null;
-    }
-
-    public void clearPendingRideForDriver(String driverId) {
-        redisTemplate.delete("driver:pending-ride:" + driverId);
     }
 }
