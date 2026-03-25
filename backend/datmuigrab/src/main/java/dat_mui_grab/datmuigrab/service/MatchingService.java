@@ -44,7 +44,7 @@ public class MatchingService {
             log.info("Khong tim thay tai xe cho chuyen {}", ride.getId());
             return;
         }
-
+        log.info("candidates: ",candidates,"        ride:  {}",ride);
         List<DriverWithDistance> ranked = rankDrivers(candidates, ride);
         log.info("ranked driver {}",ranked);
         for (DriverWithDistance dwd : ranked) {
