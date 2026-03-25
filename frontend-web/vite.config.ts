@@ -16,7 +16,6 @@ export default defineConfig(({ mode }) => {
     define: {
       global: 'globalThis',
     },
-    base: '/grabdatmui/',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
