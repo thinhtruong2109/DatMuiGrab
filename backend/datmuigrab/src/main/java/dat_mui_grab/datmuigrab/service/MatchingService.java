@@ -46,9 +46,10 @@ public class MatchingService {
         }
 
         List<DriverWithDistance> ranked = rankDrivers(candidates, ride);
-
+        log.info("ranked driver {}",ranked);
         for (DriverWithDistance dwd : ranked) {
             Driver driver = dwd.getDriver();
+            log.info("targeted driver {}",driver);
             boolean locked = redisService.acquireDriverLock(driver.getId().toString());
             if (!locked) {
                 continue;
