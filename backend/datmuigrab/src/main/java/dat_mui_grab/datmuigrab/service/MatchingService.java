@@ -53,6 +53,8 @@ public class MatchingService {
                 continue;
             }
 
+            redisService.setPendingRideForDriver(driver.getId().toString(), ride.getId().toString());
+
             messagingTemplate.convertAndSend(
                     "/topic/driver/" + driver.getId() + "/new-ride",
                     ride.getId().toString()
