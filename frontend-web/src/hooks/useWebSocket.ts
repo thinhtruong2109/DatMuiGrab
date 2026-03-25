@@ -15,6 +15,16 @@ interface UseWebSocketOptions {
   onDisconnect?: () => void
 }
 
+interface WebSocketRuntimeState {
+  client: Client | null
+  accessToken: string | null
+  consumerCount: number
+  subscriptions: PendingSubscription[]
+  nextSubscriptionId: number
+  connectListeners: Set<() => void>
+  disconnectListeners: Set<() => void>
+}
+
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || '/api'
 const apiBaseUrlNoTrailingSlash = apiBaseUrl.replace(/\/$/, '')
 const normalizedApiBaseUrl = /\/api$/i.test(apiBaseUrlNoTrailingSlash)
@@ -22,75 +32,120 @@ const normalizedApiBaseUrl = /\/api$/i.test(apiBaseUrlNoTrailingSlash)
   : `${apiBaseUrlNoTrailingSlash}/api`
 const sockJsEndpoint = `${normalizedApiBaseUrl.replace(/\/api$/i, '')}/ws`
 
+const runtimeState: WebSocketRuntimeState = {
+  client: null,
+  accessToken: null,
+  consumerCount: 0,
+  subscriptions: [],
+  nextSubscriptionId: 0,
+  connectListeners: new Set(),
+  disconnectListeners: new Set(),
+}
+
+const parseMessageBody = (body: string) => {
+  try {
+    return JSON.parse(body)
+  } catch {
+    return body
+  }
+}
+
+const activatePendingSubscriptions = () => {
+  const client = runtimeState.client
+  if (!client?.connected) return
+
+  runtimeState.subscriptions.forEach((sub) => {
+    if (sub.unsubscribe) return
+
+    const stompSub = client.subscribe(sub.destination, (msg) => {
+      sub.callback(parseMessageBody(msg.body))
+    })
+
+    sub.unsubscribe = () => stompSub.unsubscribe()
+  })
+}
+
+const deactivateClient = () => {
+  runtimeState.subscriptions.forEach((sub) => {
+    sub.unsubscribe?.()
+    sub.unsubscribe = undefined
+  })
+
+  runtimeState.client?.deactivate()
+  runtimeState.client = null
+}
+
+const ensureClient = (accessToken?: string) => {
+  if (!accessToken) return
+
+  if (runtimeState.client && runtimeState.accessToken === accessToken) {
+    return
+  }
+
+  deactivateClient()
+  runtimeState.accessToken = accessToken
+
+  const client = new Client({
+    webSocketFactory: () => new SockJS(sockJsEndpoint),
+    connectHeaders: { Authorization: `Bearer ${accessToken}` },
+    reconnectDelay: 3000,
+    onConnect: () => {
+      activatePendingSubscriptions()
+      runtimeState.connectListeners.forEach((listener) => listener())
+    },
+    onDisconnect: () => {
+      runtimeState.disconnectListeners.forEach((listener) => listener())
+    },
+  })
+
+  runtimeState.client = client
+  client.activate()
+}
+
 export function useWebSocket(options?: UseWebSocketOptions) {
-  const clientRef = useRef<Client | null>(null)
-  const subscriptionsRef = useRef<PendingSubscription[]>([])
-  const subscriptionIdRef = useRef(0)
+  const clientRef = useRef<Client | null>(runtimeState.client)
   const { accessToken } = useAuthStore()
 
   useEffect(() => {
-    const activatePendingSubscriptions = () => {
-      const client = clientRef.current
-      if (!client?.connected) return
+    runtimeState.consumerCount += 1
+    if (options?.onConnect) runtimeState.connectListeners.add(options.onConnect)
+    if (options?.onDisconnect) runtimeState.disconnectListeners.add(options.onDisconnect)
 
-      subscriptionsRef.current.forEach((sub) => {
-        if (sub.unsubscribe) return
-        const stompSub = client.subscribe(sub.destination, (msg) => {
-          try {
-            sub.callback(JSON.parse(msg.body))
-          } catch {
-            sub.callback(msg.body)
-          }
-        })
-        sub.unsubscribe = () => stompSub.unsubscribe()
-      })
-    }
-
-    const client = new Client({
-      webSocketFactory: () => new SockJS(sockJsEndpoint),
-      connectHeaders: { Authorization: `Bearer ${accessToken}` },
-      reconnectDelay: 3000,
-      onConnect: () => {
-        activatePendingSubscriptions()
-        options?.onConnect?.()
-      },
-      onDisconnect: () => options?.onDisconnect?.(),
-    })
-
-    client.activate()
-    clientRef.current = client
+    ensureClient(accessToken)
+    clientRef.current = runtimeState.client
 
     return () => {
-      subscriptionsRef.current.forEach((sub) => {
-        sub.unsubscribe?.()
-        sub.unsubscribe = undefined
-      })
-      client.deactivate()
+      runtimeState.consumerCount = Math.max(0, runtimeState.consumerCount - 1)
+
+      if (options?.onConnect) runtimeState.connectListeners.delete(options.onConnect)
+      if (options?.onDisconnect) runtimeState.disconnectListeners.delete(options.onDisconnect)
+
+      if (runtimeState.consumerCount === 0) {
+        runtimeState.subscriptions = []
+        deactivateClient()
+        runtimeState.accessToken = null
+      }
     }
-  }, [accessToken])
+  }, [accessToken, options?.onConnect, options?.onDisconnect])
 
   const subscribe = useCallback((destination: string, callback: (body: any) => void) => {
-    const id = ++subscriptionIdRef.current
+    const id = ++runtimeState.nextSubscriptionId
     const item: PendingSubscription = { id, destination, callback }
-    subscriptionsRef.current.push(item)
+    runtimeState.subscriptions.push(item)
 
-    const client = clientRef.current
+    const client = runtimeState.client
     if (client?.connected) {
       const stompSub = client.subscribe(destination, (msg) => {
-        try {
-          callback(JSON.parse(msg.body))
-        } catch {
-          callback(msg.body)
-        }
+        callback(parseMessageBody(msg.body))
       })
       item.unsubscribe = () => stompSub.unsubscribe()
     }
 
     return () => {
-      const idx = subscriptionsRef.current.findIndex((s) => s.id === id)
+      const idx = runtimeState.subscriptions.findIndex((s) => s.id === id)
       if (idx !== -1) {
-        subscriptionsRef.current[idx].unsubscribe?.()
-        subscriptionsRef.current.splice(idx, 1)
+        runtimeState.subscriptions[idx].unsubscribe?.()
+        runtimeState.subscriptions.splice(idx, 1)
       }
     }
   }, [])
