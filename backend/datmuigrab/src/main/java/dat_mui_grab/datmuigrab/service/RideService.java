@@ -5,6 +5,8 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -35,10 +37,14 @@ import dat_mui_grab.datmuigrab.repository.TransportCompanyRepository;
 import dat_mui_grab.datmuigrab.repository.UserRepository;
 import dat_mui_grab.datmuigrab.repository.WalletTransactionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class RideService {
+
+        private static final long DRIVER_BUSY_TIMEOUT_MINUTES = 2;
 
     private final RideRepository rideRepository;
     private final DriverRepository driverRepository;
@@ -167,6 +173,8 @@ public class RideService {
             ride.setStatus(RideStatus.MATCHED);
             ride = rideRepository.save(ride);
             messagingTemplate.convertAndSend("/topic/ride/" + rideId + "/status", mapToResponse(ride));
+
+                        scheduleDriverBusyTimeout(ride.getId(), driver.getId());
         }
 
         if (newStatus == RideStatus.IN_PROGRESS) {
@@ -241,6 +249,48 @@ public class RideService {
             driverRepository.save(driver);
         }
     }
+
+        private void scheduleDriverBusyTimeout(UUID rideId, UUID driverId) {
+                CompletableFuture.runAsync(
+                                () -> autoReleaseBusyDriverIfTimedOut(rideId, driverId),
+                                CompletableFuture.delayedExecutor(DRIVER_BUSY_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+                ).exceptionally(ex -> {
+                        log.warn("Khong the tu dong go BUSY cho chuyen {}: {}", rideId, ex.getMessage());
+                        return null;
+                });
+        }
+
+        private void autoReleaseBusyDriverIfTimedOut(UUID rideId, UUID driverId) {
+                Ride ride = rideRepository.findById(rideId).orElse(null);
+                if (ride == null || ride.getDriver() == null) {
+                        return;
+                }
+
+                if (!ride.getDriver().getId().equals(driverId)) {
+                        return;
+                }
+
+                if (ride.getStatus() != RideStatus.MATCHED && ride.getStatus() != RideStatus.DRIVER_ARRIVING) {
+                        return;
+                }
+
+                Driver driver = ride.getDriver();
+                driver.setOnlineStatus(DriverOnlineStatus.ONLINE);
+                driverRepository.save(driver);
+
+                redisService.setDriverOnline(driverId.toString());
+                redisService.releaseDriverLock(driverId.toString());
+
+                ride.setDriver(null);
+                ride.setStatus(RideStatus.SEARCHING);
+                ride = rideRepository.save(ride);
+
+                messagingTemplate.convertAndSend("/topic/ride/" + rideId + "/status", mapToResponse(ride));
+                matchingService.findAndNotifyDriver(ride);
+
+                log.info("Tu dong go BUSY cho tai xe {} sau {} phut timeout cua chuyen {}",
+                                driverId, DRIVER_BUSY_TIMEOUT_MINUTES, rideId);
+        }
 
     public List<RideResponse> getMyRides(UUID customerId) {
         User customer = userRepository.findById(customerId)
