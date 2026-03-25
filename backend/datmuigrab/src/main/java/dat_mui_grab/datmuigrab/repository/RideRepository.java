@@ -32,4 +32,7 @@ public interface RideRepository extends JpaRepository<Ride, UUID> {
 
     @EntityGraph(attributePaths = {"customer", "company", "driver", "driver.user"})
     Optional<Ride> findFirstByCompanyIdAndStatusOrderByCreatedAtAsc(UUID companyId, RideStatus status);
+
+    @EntityGraph(attributePaths = {"customer", "company", "driver", "driver.user"})
+    Optional<Ride> findFirstByCustomerAndStatusInOrderByCreatedAtDesc(User customer, List<RideStatus> statuses);
 }

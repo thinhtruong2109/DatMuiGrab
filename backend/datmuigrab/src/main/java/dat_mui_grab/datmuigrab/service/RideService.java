@@ -1,5 +1,16 @@
 package dat_mui_grab.datmuigrab.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import dat_mui_grab.datmuigrab.dto.request.BookRideRequest;
 import dat_mui_grab.datmuigrab.dto.request.CancelRideRequest;
 import dat_mui_grab.datmuigrab.dto.request.UpdateRideStatusRequest;
@@ -24,16 +35,6 @@ import dat_mui_grab.datmuigrab.repository.TransportCompanyRepository;
 import dat_mui_grab.datmuigrab.repository.UserRepository;
 import dat_mui_grab.datmuigrab.repository.WalletTransactionRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +56,8 @@ public class RideService {
     public RideResponse bookRide(UUID customerId, BookRideRequest request) {
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay nguoi dung"));
+
+        ensureNoActiveRide(customer);
 
         TransportCompany company = companyRepository.findById(request.getCompanyId())
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Khong tim thay cong ty"));
@@ -88,6 +91,24 @@ public class RideService {
 
         return mapToResponse(ride);
     }
+
+        private void ensureNoActiveRide(User customer) {
+                List<RideStatus> activeStatuses = List.of(
+                                RideStatus.SEARCHING,
+                                RideStatus.MATCHED,
+                                RideStatus.DRIVER_ARRIVING,
+                                RideStatus.IN_PROGRESS
+                );
+
+                boolean hasActiveRide = rideRepository
+                                .findFirstByCustomerAndStatusInOrderByCreatedAtDesc(customer, activeStatuses)
+                                .isPresent();
+
+                if (hasActiveRide) {
+                        throw new AppException(ErrorCode.VALIDATION_ERROR,
+                                        "Ban dang co chuyen di chua hoan thanh, vui long tiep tuc chuyen hien tai");
+                }
+        }
 
     public RideResponse getById(UUID rideId) {
         return mapToResponse(findById(rideId));

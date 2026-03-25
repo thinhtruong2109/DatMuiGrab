@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Box, Card, CardContent, TextField, Button, Typography,
@@ -82,9 +82,38 @@ export default function BookRidePage() {
   const [pickupSearching, setPickupSearching] = useState(false)
   const [destinationSearching, setDestinationSearching] = useState(false)
   const [booking, setBooking] = useState(false)
+  const [checkingActiveRide, setCheckingActiveRide] = useState(true)
   const [error, setError] = useState('')
 
   const center: [number, number] = myCoords || [9.1770, 105.1524] // Cà Mau
+
+  useEffect(() => {
+    let cancelled = false
+
+    const restoreActiveRide = async () => {
+      try {
+        const rides = await rideApi.getMyRides()
+        if (cancelled) return
+
+        const activeRide = rides.find((ride) => ride.status !== 'COMPLETED' && ride.status !== 'CANCELLED')
+        if (activeRide) {
+          setCurrentRide(activeRide)
+          navigate(`/customer/ride/${activeRide.id}`, { replace: true })
+          return
+        }
+      } catch {
+        // keep page usable if bootstrap call fails
+      } finally {
+        if (!cancelled) setCheckingActiveRide(false)
+      }
+    }
+
+    restoreActiveRide()
+
+    return () => {
+      cancelled = true
+    }
+  }, [navigate, setCurrentRide])
 
   const haversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
     const R = 6371
@@ -260,6 +289,14 @@ export default function BookRidePage() {
       setPickupInput('Vị trí của bạn')
       setFocusPosition([myCoords[0], myCoords[1]])
     }
+  }
+
+  if (checkingActiveRide) {
+    return (
+      <Box display="flex" alignItems="center" justifyContent="center" height="calc(100vh - 64px)">
+        <CircularProgress />
+      </Box>
+    )
   }
 
   return (
