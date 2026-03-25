@@ -1,6 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { Client } from '@stomp/stompjs'
-import SockJS from 'sockjs-client'
 import { useAuthStore } from '@/store/authStore'
 
 interface PendingSubscription {
@@ -30,7 +29,25 @@ const apiBaseUrlNoTrailingSlash = apiBaseUrl.replace(/\/$/, '')
 const normalizedApiBaseUrl = /\/api$/i.test(apiBaseUrlNoTrailingSlash)
   ? apiBaseUrlNoTrailingSlash
   : `${apiBaseUrlNoTrailingSlash}/api`
-const sockJsEndpoint = `${normalizedApiBaseUrl.replace(/\/api$/i, '')}/ws`
+const webSocketEndpoint = (() => {
+  const endpointPath = `${normalizedApiBaseUrl.replace(/\/api$/i, '')}/ws`
+
+  if (/^wss?:\/\//i.test(endpointPath)) {
+    return endpointPath
+  }
+
+  if (/^https?:\/\//i.test(endpointPath)) {
+    return endpointPath.replace(/^http/i, 'ws')
+  }
+
+  if (typeof window !== 'undefined') {
+    const wsOrigin = window.location.origin.replace(/^http/i, 'ws')
+    const normalizedPath = endpointPath.startsWith('/') ? endpointPath : `/${endpointPath}`
+    return `${wsOrigin}${normalizedPath}`
+  }
+
+  return endpointPath
+})()
 
 const runtimeState: WebSocketRuntimeState = {
   client: null,
@@ -75,7 +92,7 @@ const deactivateClient = () => {
   runtimeState.client = null
 }
 
-const ensureClient = (accessToken?: string) => {
+const ensureClient = (accessToken?: string | null) => {
   if (!accessToken) return
 
   if (runtimeState.client && runtimeState.accessToken === accessToken) {
@@ -86,7 +103,7 @@ const ensureClient = (accessToken?: string) => {
   runtimeState.accessToken = accessToken
 
   const client = new Client({
-    webSocketFactory: () => new SockJS(sockJsEndpoint),
+    brokerURL: webSocketEndpoint,
     connectHeaders: { Authorization: `Bearer ${accessToken}` },
     reconnectDelay: 3000,
     onConnect: () => {
