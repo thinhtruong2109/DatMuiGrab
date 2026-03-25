@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -47,18 +48,26 @@ public class MatchingService {
         }
 
         log.info("candidates(size={}): {}", candidates.size(), candidates);
+        log.info("candidate driver ids: {}", candidates.stream().map(Driver::getId).collect(Collectors.toList()));
         log.info("ride: {}", ride);
 
 
         List<DriverWithDistance> ranked = rankDrivers(candidates, ride);
         log.info("ranked drivers(size={}): {}", ranked.size(), ranked);
+        log.info("ranked driver details: {}", ranked.stream()
+                .map(dwd -> "{driverId=" + dwd.getDriver().getId() + ", distanceKm=" + String.format("%.3f", dwd.getDistance()) + "}")
+                .collect(Collectors.joining(", ")));
         for (DriverWithDistance dwd : ranked) {
             Driver driver = dwd.getDriver();
             log.info("targeted driver: {}", driver);
+            log.info("targeted driverId={}, distanceKm={}", driver.getId(), String.format("%.3f", dwd.getDistance()));
             boolean locked = redisService.acquireDriverLock(driver.getId().toString());
             if (!locked) {
+                log.info("driver {} is locked by another matcher, skip", driver.getId());
                 continue;
             }
+
+            log.info("acquired lock for driver {}", driver.getId());
 
             redisService.setPendingRideForDriver(driver.getId().toString(), ride.getId().toString());
 
