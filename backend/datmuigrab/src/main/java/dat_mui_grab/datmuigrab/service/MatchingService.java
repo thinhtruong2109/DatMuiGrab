@@ -131,20 +131,7 @@ public class MatchingService {
             log.info("rankDrivers candidate driverId={} redisLocationRaw={}", driver.getId(), locationStr);
 
             if (locationStr == null || locationStr.isBlank()) {
-                if (driver.getCurrentLat() == null || driver.getCurrentLng() == null) {
-                    log.info("rankDrivers skip driverId={} because Redis location is null/blank and DB location is also null", driver.getId());
-                    continue;
-                }
-
-                double lat = driver.getCurrentLat().doubleValue();
-                double lng = driver.getCurrentLng().doubleValue();
-                double distance = haversine(pickupLat, pickupLng, lat, lng);
-
-                log.info("rankDrivers fallback DB location for driverId={} dbLocation=({}, {}), distanceKm={}",
-                        driver.getId(), lat, lng, String.format("%.3f", distance));
-
-                result.add(new DriverWithDistance(driver, distance));
-                log.info("rankDrivers add driverId={} into ranked list from DB fallback", driver.getId());
+                log.info("rankDrivers skip driverId={} because Redis location is null/blank", driver.getId());
                 continue;
             }
 

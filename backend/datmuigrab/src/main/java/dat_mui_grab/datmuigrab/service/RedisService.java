@@ -12,7 +12,6 @@ public class RedisService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String GEO_KEY = "drivers:geo";
-    private static final Duration DRIVER_LOCATION_TTL = Duration.ofSeconds(90);
     private static final Duration DRIVER_PENDING_RIDE_TTL = Duration.ofMinutes(2);
 
     public RedisService(RedisTemplate<String, Object> redisTemplate) {
@@ -38,7 +37,7 @@ public class RedisService {
         redisTemplate.opsForValue().set(
                 "driver:location:" + driverId,
                 lat + "," + lng,
-                DRIVER_LOCATION_TTL
+                Duration.ofSeconds(30)
         );
         redisTemplate.opsForGeo().add(GEO_KEY, new Point(lng, lat), driverId);
     }
