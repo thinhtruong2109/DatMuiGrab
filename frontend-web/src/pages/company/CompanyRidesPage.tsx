@@ -28,12 +28,12 @@ export default function CompanyRidesPage() {
   if (loading) return <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader title="Lịch sử chuyến đi" subtitle={`${rides.length} chuyến`} />
 
       {rides.length === 0 ? <EmptyState title="Chưa có chuyến đi nào" /> : (
-        <TableContainer component={Card}>
-          <Table>
+        <TableContainer component={Card} sx={{ overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 780 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Điểm đến</TableCell>
@@ -49,7 +49,7 @@ export default function CompanyRidesPage() {
               {rides.map((ride) => (
                 <TableRow key={ride.id} hover>
                   <TableCell>
-                    <Typography fontSize={14} fontWeight={500} noWrap sx={{ maxWidth: 200 }}>
+                    <Typography fontSize={14} fontWeight={500} noWrap sx={{ maxWidth: { xs: 140, sm: 200 } }}>
                       {ride.destinationAddress}
                     </Typography>
                   </TableCell>

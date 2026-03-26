@@ -31,11 +31,11 @@ export default function CustomerProfilePage() {
   }
 
   return (
-    <Box p={3} maxWidth={560} mx="auto" display="flex" flexDirection="column" gap={3}>
+    <Box p={{ xs: 2, md: 3 }} maxWidth={560} mx="auto" display="flex" flexDirection="column" gap={3}>
       <PageHeader title="Hồ sơ cá nhân" />
       <Card>
-        <CardContent sx={{ p: 3 }}>
-          <Box display="flex" alignItems="center" gap={2} mb={3}>
+        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+          <Box display="flex" alignItems="center" flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={3}>
             <Avatar sx={{ width: 64, height: 64, bgcolor: 'primary.main', fontSize: 24 }}>
               {user?.fullName?.[0]}
             </Avatar>

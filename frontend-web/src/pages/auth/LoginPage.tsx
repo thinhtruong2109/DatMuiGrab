@@ -49,8 +49,8 @@ export default function LoginPage() {
         p: 2,
       }}
     >
-      <Card sx={{ width: '100%', maxWidth: 420, borderRadius: 4 }}>
-        <CardContent sx={{ p: 4 }}>
+      <Card sx={{ width: '100%', maxWidth: 420, borderRadius: { xs: 3, sm: 4 } }}>
+        <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
           {/* Logo */}
           <Box display="flex" alignItems="center" gap={1.5} mb={4}>
             <Box

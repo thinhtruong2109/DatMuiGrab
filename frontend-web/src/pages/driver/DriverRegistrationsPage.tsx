@@ -52,7 +52,7 @@ export default function DriverRegistrationsPage() {
   }
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader
         title="Đăng ký công ty"
         subtitle="Quản lý đăng ký chạy xe với các công ty vận tải"
@@ -75,7 +75,7 @@ export default function DriverRegistrationsPage() {
         <Box display="flex" flexDirection="column" gap={2}>
           {registrations.map((reg) => (
             <Card key={reg.id}>
-              <CardContent sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <CardContent sx={{ p: { xs: 2, md: 2.5 }, display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                 <Box sx={{ width: 44, height: 44, borderRadius: 2, bgcolor: 'primary.50', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <BusinessIcon sx={{ color: 'primary.main' }} />
                 </Box>
@@ -90,7 +90,7 @@ export default function DriverRegistrationsPage() {
                     </Typography>
                   )}
                 </Box>
-                <Chip label={statusLabel[reg.status]} color={statusColor[reg.status]} />
+                <Chip label={statusLabel[reg.status]} color={statusColor[reg.status]} sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }} />
               </CardContent>
             </Card>
           ))}

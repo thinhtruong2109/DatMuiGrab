@@ -46,8 +46,8 @@ export default function RegisterPage() {
         p: 2,
       }}
     >
-      <Card sx={{ width: '100%', maxWidth: 460, borderRadius: 4 }}>
-        <CardContent sx={{ p: 4 }}>
+      <Card sx={{ width: '100%', maxWidth: 460, borderRadius: { xs: 3, sm: 4 } }}>
+        <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
           <Box display="flex" alignItems="center" gap={1.5} mb={4}>
             <Box sx={{ width: 44, height: 44, borderRadius: 2.5, bgcolor: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <DirectionsCarIcon sx={{ color: 'white', fontSize: 24 }} />
@@ -64,7 +64,17 @@ export default function RegisterPage() {
             exclusive
             onChange={(_, v) => v && setRole(v)}
             fullWidth
-            sx={{ mb: 3 }}
+            sx={{
+              mb: 3,
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+              gap: 1,
+              '& .MuiToggleButtonGroup-grouped': {
+                border: '1px solid',
+                borderColor: 'divider !important',
+                borderRadius: '10px !important',
+              },
+            }}
           >
             {[
               { value: 'CUSTOMER', label: 'Khách hàng', icon: <PersonIcon fontSize="small" /> },

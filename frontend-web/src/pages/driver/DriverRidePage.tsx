@@ -137,6 +137,7 @@ export default function DriverRidePage() {
   const [updating, setUpdating] = useState(false)
   const [activeRoutePoints, setActiveRoutePoints] = useState<[number, number][]>([])
   const [activeRouteDistanceKm, setActiveRouteDistanceKm] = useState<number | null>(null)
+  const [pickupToDestinationRoutePoints, setPickupToDestinationRoutePoints] = useState<[number, number][]>([])
 
   const sendRideLocation = useCallback(() => {
     const latestRide = currentRideRef.current
@@ -187,6 +188,7 @@ export default function DriverRidePage() {
     if (!currentRide) {
       setActiveRoutePoints([])
       setActiveRouteDistanceKm(null)
+      setPickupToDestinationRoutePoints([])
       return
     }
 
@@ -226,6 +228,26 @@ export default function DriverRidePage() {
       cancelled = true
     }
   }, [currentRide, coords])
+
+  useEffect(() => {
+    if (!currentRide) {
+      setPickupToDestinationRoutePoints([])
+      return
+    }
+
+    const pickupPoint: [number, number] = [currentRide.pickupLat, currentRide.pickupLng]
+    const destinationPoint: [number, number] = [currentRide.destinationLat, currentRide.destinationLng]
+
+    let cancelled = false
+    getRoutePoints(pickupPoint, destinationPoint).then((result) => {
+      if (cancelled) return
+      setPickupToDestinationRoutePoints(result.points)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentRide?.id, currentRide?.pickupLat, currentRide?.pickupLng, currentRide?.destinationLat, currentRide?.destinationLng])
 
   const handleUpdateStatus = async () => {
     if (!currentRide) return
@@ -283,12 +305,12 @@ export default function DriverRidePage() {
       : currentRide.status === 'MATCHED' || currentRide.status === 'DRIVER_ARRIVING'
         ? 'Lộ trình tới điểm đón'
         : null
-  const routeColor = currentRide.status === 'IN_PROGRESS' ? 'success.main' : 'primary.main'
+  const routeColor = '#1976d2'
 
   return (
-    <Box p={3} display="flex" gap={3}>
+    <Box p={{ xs: 2, md: 3 }} display="flex" flexDirection={{ xs: 'column', md: 'row' }} gap={2}>
       {/* Left: ride info + chat */}
-      <Box flex={1} display="flex" flexDirection="column" gap={2}>
+      <Box flex={1} display="flex" flexDirection="column" gap={2} order={{ xs: 2, md: 1 }}>
         <Card>
           <CardContent sx={{ p: 3 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
@@ -377,12 +399,27 @@ export default function DriverRidePage() {
       </Box>
 
       {/* Right: map */}
-      <Box sx={{ width: 480, height: 500, borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
+      <Box
+        sx={{
+          width: { xs: '100%', md: 480 },
+          height: { xs: 300, sm: 360, md: 500 },
+          borderRadius: 3,
+          overflow: 'hidden',
+          flexShrink: 0,
+          order: { xs: 1, md: 2 },
+        }}
+      >
         <MapContainer center={mapCenter} zoom={14} style={{ height: '100%', width: '100%' }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <RouteAutoFit points={activeRoutePoints} fallbackCenter={mapCenter} />
+          <RouteAutoFit
+            points={activeRoutePoints.length > 1 ? activeRoutePoints : pickupToDestinationRoutePoints}
+            fallbackCenter={mapCenter}
+          />
           <Marker position={[currentRide.pickupLat, currentRide.pickupLng]} />
           <Marker position={[currentRide.destinationLat, currentRide.destinationLng]} />
+          {pickupToDestinationRoutePoints.length > 1 && (
+            <Polyline positions={pickupToDestinationRoutePoints} pathOptions={{ color: '#1976d2' }} weight={4} opacity={0.5} />
+          )}
           {activeRoutePoints.length > 1 && (
             <Polyline positions={activeRoutePoints} pathOptions={{ color: routeColor }} weight={5} opacity={0.85} />
           )}

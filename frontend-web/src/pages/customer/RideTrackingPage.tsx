@@ -305,7 +305,7 @@ export default function RideTrackingPage() {
   }
 
   if (!ride) return (
-    <Box display="flex" alignItems="center" justifyContent="center" height="calc(100vh - 64px)">
+    <Box display="flex" alignItems="center" justifyContent="center" height="calc(100dvh - 56px)">
       <CircularProgress />
     </Box>
   )
@@ -320,10 +320,22 @@ export default function RideTrackingPage() {
   const routeColor = ride.status === 'IN_PROGRESS' ? 'success.main' : 'primary.main'
 
   return (
-    <Box display="flex" height="calc(100vh - 64px)">
+    <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} height={{ xs: 'auto', md: 'calc(100dvh - 64px)' }} minHeight={{ xs: 'calc(100dvh - 56px)', md: 'auto' }}>
       {/* Info panel */}
-      <Box sx={{ width: 340, flexShrink: 0, overflow: 'auto', borderRight: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-        <Box p={3}>
+      <Box
+        sx={{
+          width: { xs: '100%', md: 340 },
+          flexShrink: 0,
+          overflow: 'auto',
+          borderRight: { xs: 'none', md: '1px solid' },
+          borderTop: { xs: '1px solid', md: 'none' },
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          order: { xs: 2, md: 1 },
+          maxHeight: { xs: 'none', md: '100%' },
+        }}
+      >
+        <Box p={{ xs: 2, sm: 3 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography variant="h6" fontWeight={700}>Chuyến đi của bạn</Typography>
             <Chip
@@ -460,7 +472,7 @@ export default function RideTrackingPage() {
       </Box>
 
       {/* Map */}
-      <Box flex={1}>
+      <Box flex={1} order={{ xs: 1, md: 2 }} sx={{ height: { xs: '45dvh', sm: '50dvh', md: '100%' } }}>
         <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%' }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <RouteAutoFit points={activeRoutePoints} fallbackCenter={center} />

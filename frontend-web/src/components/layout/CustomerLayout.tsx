@@ -32,15 +32,25 @@ export default function CustomerLayout() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <AppBar position="sticky" elevation={0}>
-        <Toolbar>
-          <Box display="flex" alignItems="center" gap={1} mr={4}>
+        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 }, px: { xs: 1.5, sm: 2 } }}>
+          <Box display="flex" alignItems="center" gap={1} mr={{ xs: 1.5, sm: 4 }}>
             <DirectionsCarIcon sx={{ color: 'primary.main' }} />
-            <Typography variant="h6" fontWeight={800} color="primary.main">
+            <Typography
+              variant="h6"
+              fontWeight={800}
+              color="primary.main"
+              sx={{ display: { xs: 'none', sm: 'block' } }}
+            >
               Đất Mũi Grab
             </Typography>
           </Box>
 
-          <Box display="flex" gap={0.5} flex={1}>
+          <Box
+            display="flex"
+            gap={0.5}
+            flex={1}
+            sx={{ overflowX: 'auto', '&::-webkit-scrollbar': { display: 'none' } }}
+          >
             {NAV_ITEMS.map((item) => (
               <Chip
                 key={item.path}
@@ -49,7 +59,7 @@ export default function CustomerLayout() {
                 onClick={() => navigate(item.path)}
                 variant={location.pathname.startsWith(item.path) ? 'filled' : 'outlined'}
                 color={location.pathname.startsWith(item.path) ? 'primary' : 'default'}
-                sx={{ fontWeight: 500 }}
+                sx={{ fontWeight: 500, flexShrink: 0 }}
               />
             ))}
           </Box>

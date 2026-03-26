@@ -12,7 +12,7 @@ interface Props {
 
 export default function PageHeader({ title, subtitle, breadcrumbs, action }: Props) {
   return (
-    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
+    <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} gap={1.5} mb={3}>
       <Box>
         {breadcrumbs && (
           <Breadcrumbs sx={{ mb: 0.5 }}>
@@ -36,14 +36,14 @@ export default function PageHeader({ title, subtitle, breadcrumbs, action }: Pro
             )}
           </Breadcrumbs>
         )}
-        <Typography variant="h4">{title}</Typography>
+        <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>{title}</Typography>
         {subtitle && (
           <Typography variant="body2" color="text.secondary" mt={0.5}>
             {subtitle}
           </Typography>
         )}
       </Box>
-      {action && <Box>{action}</Box>}
+      {action && <Box sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }}>{action}</Box>}
     </Box>
   )
 }

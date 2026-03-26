@@ -37,8 +37,8 @@ export default function VerifyEmailPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', p: 2 }}>
-      <Card sx={{ width: '100%', maxWidth: 400, borderRadius: 4 }}>
-        <CardContent sx={{ p: 4, textAlign: 'center' }}>
+      <Card sx={{ width: '100%', maxWidth: 400, borderRadius: { xs: 3, sm: 4 } }}>
+        <CardContent sx={{ p: { xs: 2.5, sm: 4 }, textAlign: 'center' }}>
           <Box sx={{ width: 72, height: 72, borderRadius: '50%', bgcolor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 3 }}>
             <MarkEmailReadIcon sx={{ fontSize: 36, color: 'primary.main' }} />
           </Box>
@@ -57,7 +57,8 @@ export default function VerifyEmailPage() {
               fullWidth required
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
-              inputProps={{ maxLength: 6, style: { textAlign: 'center', fontSize: 24, letterSpacing: 8 } }}
+              inputProps={{ maxLength: 6, style: { textAlign: 'center', fontSize: 20, letterSpacing: 4 } }}
+              sx={{ '& input': { fontSize: { xs: 20, sm: 24 }, letterSpacing: { xs: '4px', sm: '8px' } } }}
             />
             <Button type="submit" variant="contained" size="large" fullWidth disabled={loading}>
               {loading ? 'Đang xác nhận...' : 'Xác nhận'}

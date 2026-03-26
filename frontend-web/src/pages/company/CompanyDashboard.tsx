@@ -53,7 +53,7 @@ export default function CompanyDashboard() {
   if (loading) return <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader
         title={company?.companyName || 'Dashboard'}
         subtitle="Tổng quan hoạt động công ty"
@@ -85,26 +85,26 @@ export default function CompanyDashboard() {
       {/* Price config */}
       {company && (
         <Card sx={{ mb: 3 }}>
-          <CardContent sx={{ p: 3 }}>
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
             <Typography fontWeight={600} mb={2}>Cấu hình giá cước hiện tại</Typography>
-            <Box display="flex" gap={4}>
+            <Box display="flex" gap={2} flexWrap="wrap">
               <Box>
                 <Typography variant="caption" color="text.secondary">Giá per km</Typography>
                 <Typography variant="h5" fontWeight={700} color="primary.main">
                   {formatCurrency(company.pricePerKm)}/km
                 </Typography>
               </Box>
-              <Divider orientation="vertical" flexItem />
+              <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' } }} />
               <Box>
                 <Typography variant="caption" color="text.secondary">Tài xế nhận</Typography>
                 <Typography variant="h5" fontWeight={700}>{company.driverRevenuePercent}%</Typography>
               </Box>
-              <Divider orientation="vertical" flexItem />
+              <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' } }} />
               <Box>
                 <Typography variant="caption" color="text.secondary">Công ty nhận</Typography>
                 <Typography variant="h5" fontWeight={700}>{100 - company.driverRevenuePercent}%</Typography>
               </Box>
-              <Divider orientation="vertical" flexItem />
+              <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' } }} />
               <Box>
                 <Typography variant="caption" color="text.secondary">Phí sàn (Đất Mũi)</Typography>
                 <Typography variant="h5" fontWeight={700} color="text.secondary">5%</Typography>
@@ -117,7 +117,7 @@ export default function CompanyDashboard() {
       {/* Recent rides */}
       <Card>
         <CardContent sx={{ p: 0 }}>
-          <Box px={3} py={2} borderBottom="1px solid" borderColor="divider">
+          <Box px={{ xs: 2, md: 3 }} py={2} borderBottom="1px solid" borderColor="divider">
             <Typography fontWeight={600}>Chuyến đi gần đây</Typography>
           </Box>
           {recentRides.length === 0 ? (
@@ -126,14 +126,14 @@ export default function CompanyDashboard() {
             </Box>
           ) : recentRides.map((ride, i) => (
             <Box key={ride.id}>
-              <Box px={3} py={2} display="flex" justifyContent="space-between" alignItems="center">
+              <Box px={{ xs: 2, md: 3 }} py={2} display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={1}>
                 <Box>
                   <Typography fontWeight={500} fontSize={14}>{ride.destinationAddress}</Typography>
                   <Typography variant="caption" color="text.secondary">
                     {ride.driverName} • {formatDate(ride.createdAt)}
                   </Typography>
                 </Box>
-                <Box textAlign="right" display="flex" gap={1.5} alignItems="center">
+                <Box textAlign={{ xs: 'left', sm: 'right' }} display="flex" gap={1.5} alignItems="center" flexWrap="wrap">
                   <Chip label={rideStatusLabel[ride.status]} color={rideStatusColor[ride.status]} size="small" />
                   {ride.companyRevenue && (
                     <Typography fontWeight={700} color="primary.main" fontSize={14}>

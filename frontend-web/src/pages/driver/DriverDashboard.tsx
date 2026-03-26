@@ -97,7 +97,7 @@ export default function DriverDashboard() {
   }[driver?.onlineStatus || 'OFFLINE']
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader
         title="Tổng quan"
         subtitle="Quản lý trạng thái và theo dõi hoạt động"
@@ -105,8 +105,8 @@ export default function DriverDashboard() {
 
       {/* Online toggle */}
       <Card sx={{ mb: 3, borderRadius: 3, border: '2px solid', borderColor: driver?.onlineStatus === 'ONLINE' ? 'primary.main' : 'divider' }}>
-        <CardContent sx={{ p: 3 }}>
-          <Box display="flex" alignItems="center" justifyContent="space-between">
+        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+          <Box display="flex" alignItems={{ xs: 'flex-start', sm: 'center' }} flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1.5}>
             <Box display="flex" alignItems="center" gap={2}>
               <Box
                 sx={{
@@ -202,7 +202,7 @@ export default function DriverDashboard() {
           ) : (
             recentRides.map((ride, i) => (
               <Box key={ride.id}>
-                <Box px={3} py={2} display="flex" justifyContent="space-between" alignItems="center">
+                <Box px={{ xs: 2, md: 3 }} py={2} display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={1}>
                   <Box>
                     <Typography fontWeight={500} fontSize={14}>{ride.destinationAddress}</Typography>
                     <Typography variant="caption" color="text.secondary">{ride.companyName}</Typography>

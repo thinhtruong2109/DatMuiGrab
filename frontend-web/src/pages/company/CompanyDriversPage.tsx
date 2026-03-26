@@ -68,13 +68,13 @@ export default function CompanyDriversPage() {
   if (loading) return <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader
         title="Quản lý tài xế"
         subtitle={`${drivers.length} tài xế • ${pending.length} chờ duyệt`}
       />
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile sx={{ mb: 3 }}>
         <Tab label={`Đang hoạt động (${drivers.length})`} />
         <Tab label={`Chờ duyệt (${pending.length})`}
           iconPosition="end"
@@ -84,8 +84,8 @@ export default function CompanyDriversPage() {
 
       {tab === 0 && (
         drivers.length === 0 ? <EmptyState title="Chưa có tài xế nào" /> : (
-          <TableContainer component={Card}>
-            <Table>
+          <TableContainer component={Card} sx={{ overflowX: 'auto' }}>
+            <Table sx={{ minWidth: 760 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Tài xế</TableCell>
@@ -144,14 +144,14 @@ export default function CompanyDriversPage() {
             {pending.map((reg) => (
               <Card key={reg.id}>
                 <CardContent sx={{ p: 2.5 }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                  <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'flex-start' }} gap={1.5}>
                     <Box>
                       <Typography fontWeight={600}>{reg.driverId}</Typography>
                       <Typography variant="body2" color="text.secondary">
                         Nộp hồ sơ: {formatDate(reg.appliedAt)}
                       </Typography>
                     </Box>
-                    <Box display="flex" gap={1}>
+                    <Box display="flex" gap={1} flexWrap="wrap">
                       <Button
                         variant="contained"
                         size="small"

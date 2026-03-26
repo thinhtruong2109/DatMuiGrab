@@ -38,12 +38,12 @@ export default function DriverProfilePage() {
   }
 
   return (
-    <Box p={3} maxWidth={700} display="flex" flexDirection="column" gap={3}>
+    <Box p={{ xs: 2, md: 3 }} maxWidth={700} width="100%" display="flex" flexDirection="column" gap={3}>
       <PageHeader title="Hồ sơ tài xế" />
 
       <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Box display="flex" alignItems="center" gap={2} mb={3}>
+        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+          <Box display="flex" alignItems="center" flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={3}>
             <Avatar sx={{ width: 64, height: 64, bgcolor: 'primary.main', fontSize: 24 }}>
               {user?.fullName?.[0]}
             </Avatar>
@@ -75,7 +75,7 @@ export default function DriverProfilePage() {
               <TextField label="Biển số xe" fullWidth value={form.vehiclePlate}
                 onChange={(e) => setForm({ ...form, vehiclePlate: e.target.value })} />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12} sm={6}>
               <TextField select label="Loại xe" fullWidth value={form.vehicleType}
                 onChange={(e) => setForm({ ...form, vehicleType: e.target.value })}>
                 {['Xe máy', 'Ô tô 4 chỗ', 'Ô tô 7 chỗ'].map((t) => (
@@ -83,7 +83,7 @@ export default function DriverProfilePage() {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12} sm={6}>
               <TextField label="Hãng & Model xe" fullWidth value={form.vehicleModel}
                 onChange={(e) => setForm({ ...form, vehicleModel: e.target.value })} />
             </Grid>

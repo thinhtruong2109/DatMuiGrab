@@ -293,17 +293,29 @@ export default function BookRidePage() {
 
   if (checkingActiveRide) {
     return (
-      <Box display="flex" alignItems="center" justifyContent="center" height="calc(100vh - 64px)">
+      <Box display="flex" alignItems="center" justifyContent="center" height="calc(100dvh - 56px)">
         <CircularProgress />
       </Box>
     )
   }
 
   return (
-    <Box sx={{ display: 'flex', height: 'calc(100vh - 64px)' }}>
+    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, height: { xs: 'auto', md: 'calc(100dvh - 64px)' }, minHeight: { xs: 'calc(100dvh - 56px)', md: 'auto' } }}>
       {/* Left panel */}
-      <Box sx={{ width: 380, flexShrink: 0, overflow: 'auto', borderRight: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-        <Box p={3}>
+      <Box
+        sx={{
+          width: { xs: '100%', md: 380 },
+          flexShrink: 0,
+          overflow: 'auto',
+          borderRight: { xs: 'none', md: '1px solid' },
+          borderTop: { xs: '1px solid', md: 'none' },
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          order: { xs: 2, md: 1 },
+          maxHeight: { xs: 'none', md: '100%' },
+        }}
+      >
+        <Box p={{ xs: 2, sm: 3 }}>
           <Typography variant="h5" fontWeight={700} mb={0.5}>Đặt xe</Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
             Nhấn vào bản đồ hoặc nhập địa chỉ để chọn điểm
@@ -494,14 +506,15 @@ export default function BookRidePage() {
       </Box>
 
       {/* Map */}
-      <Box flex={1} position="relative">
+      <Box flex={1} position="relative" order={{ xs: 1, md: 2 }} sx={{ height: { xs: '45dvh', sm: '50dvh', md: '100%' } }}>
         {selectMode && (
           <Box
             sx={{
-              position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+              position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
               zIndex: 1000, bgcolor: 'white', px: 3, py: 1.5, borderRadius: 3,
               boxShadow: 4, border: '2px solid',
               borderColor: selectMode === 'pickup' ? 'primary.main' : 'error.main',
+              maxWidth: 'calc(100% - 24px)',
             }}
           >
             <Typography fontWeight={600} fontSize={14}>

@@ -82,14 +82,14 @@ export default function CompanySettingsPage() {
   }
 
   return (
-    <Box p={3} maxWidth={760} display="flex" flexDirection="column" gap={3}>
+    <Box p={{ xs: 2, md: 3 }} maxWidth={760} width="100%" display="flex" flexDirection="column" gap={3}>
       <PageHeader title="Cài đặt công ty" />
 
       {success && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>{success}</Alert>}
 
       {!company && (
         <Card>
-          <CardContent sx={{ p: 3 }}>
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
             <Typography fontWeight={700} mb={0.5}>Đăng ký công ty vận tải</Typography>
             <Typography variant="body2" color="text.secondary" mb={2.5}>
               Tạo hồ sơ onboarding để Admin phê duyệt kích hoạt.
@@ -103,7 +103,7 @@ export default function CompanySettingsPage() {
               <TextField label="Giá per km" type="number" value={onboarding.pricePerKm} onChange={(e) => setOnboarding({ ...onboarding, pricePerKm: Number(e.target.value) })} fullWidth />
               <TextField label="Tỉ lệ tài xế (%)" type="number" value={onboarding.driverRevenuePercent} onChange={(e) => setOnboarding({ ...onboarding, driverRevenuePercent: Number(e.target.value) })} fullWidth />
               <Box>
-                <Button variant="contained" onClick={handleCreateCompany} disabled={loading}>
+                <Button variant="contained" onClick={handleCreateCompany} disabled={loading} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                   {loading ? 'Đang tạo...' : 'Tạo hồ sơ công ty'}
                 </Button>
               </Box>
@@ -114,7 +114,7 @@ export default function CompanySettingsPage() {
 
       {/* Price config */}
       {company && <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
           <Typography fontWeight={700} mb={0.5}>Giá cước</Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
             Thay đổi giá ngay lập tức — chỉ áp dụng cho chuyến đặt mới
@@ -138,7 +138,7 @@ export default function CompanySettingsPage() {
             </Typography>
           </Box>
 
-          <Button variant="contained" onClick={handleUpdatePrice} disabled={loading}>
+          <Button variant="contained" onClick={handleUpdatePrice} disabled={loading} sx={{ width: { xs: '100%', sm: 'auto' } }}>
             Cập nhật giá
           </Button>
         </CardContent>
@@ -146,7 +146,7 @@ export default function CompanySettingsPage() {
 
       {/* Revenue split */}
       {company && <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
           <Typography fontWeight={700} mb={0.5}>Chia doanh thu</Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
             Tỉ lệ chia từ phần 95% sau khi trừ phí sàn
@@ -177,7 +177,7 @@ export default function CompanySettingsPage() {
             sx={{ mb: 2 }}
           />
 
-          <Button variant="contained" onClick={handleUpdateInfo} disabled={loading}>
+          <Button variant="contained" onClick={handleUpdateInfo} disabled={loading} sx={{ width: { xs: '100%', sm: 'auto' } }}>
             Lưu cài đặt
           </Button>
         </CardContent>

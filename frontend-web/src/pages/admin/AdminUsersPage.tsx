@@ -49,7 +49,7 @@ export default function AdminUsersPage() {
   if (loading) return <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader title="Người dùng" subtitle={`${users.length} tài khoản`} />
 
       <TextField
@@ -57,12 +57,12 @@ export default function AdminUsersPage() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         size="small"
-        sx={{ mb: 2, width: 320 }}
+        sx={{ mb: 2, width: { xs: '100%', sm: 320 } }}
         InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
       />
 
-      <TableContainer component={Card}>
-        <Table>
+      <TableContainer component={Card} sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: 720 }}>
           <TableHead>
             <TableRow>
               <TableCell>Người dùng</TableCell>

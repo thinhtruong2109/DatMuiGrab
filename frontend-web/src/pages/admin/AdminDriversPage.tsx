@@ -39,11 +39,11 @@ export default function AdminDriversPage() {
   if (loading) return <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader title="Tài xế" subtitle={`${drivers.length} tài xế`} />
 
-      <TableContainer component={Card}>
-        <Table>
+      <TableContainer component={Card} sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: 760 }}>
           <TableHead>
             <TableRow>
               <TableCell>Tài xế</TableCell>

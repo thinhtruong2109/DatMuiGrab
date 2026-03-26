@@ -41,11 +41,11 @@ export default function DriverAppealsPage() {
   }
 
   return (
-    <Box p={3} maxWidth={700}>
+    <Box p={{ xs: 2, md: 3 }} maxWidth={700} width="100%">
       <PageHeader title="Kháng cáo điểm uy tín" subtitle="Gửi yêu cầu xem xét lại trạng thái tài khoản" />
 
       <Card>
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
           <Typography fontWeight={700} mb={1}>Tạo kháng cáo</Typography>
           <Typography variant="body2" color="text.secondary" mb={2.5}>
             Đội ngũ quản trị sẽ xem xét và phản hồi trong mục quản trị.

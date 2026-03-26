@@ -39,11 +39,11 @@ export default function AdminCompaniesPage() {
   if (loading) return <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader title="Công ty vận tải" subtitle={`${companies.length} công ty`} />
 
-      <TableContainer component={Card}>
-        <Table>
+      <TableContainer component={Card} sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: 860 }}>
           <TableHead>
             <TableRow>
               <TableCell>Tên công ty</TableCell>

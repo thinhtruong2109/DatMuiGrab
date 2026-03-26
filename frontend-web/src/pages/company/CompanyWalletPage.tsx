@@ -59,14 +59,14 @@ export default function CompanyWalletPage() {
   if (loading) return <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader title="Ví & Doanh thu" />
 
       <Grid container spacing={3} mb={3}>
         <Grid item xs={12} md={8}>
           <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+            <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+              <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} gap={2}>
                 <Box>
                   <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase" letterSpacing="0.05em">
                     Số dư hiện tại
@@ -74,7 +74,7 @@ export default function CompanyWalletPage() {
                   <Typography variant="h3" fontWeight={800} color="primary.main" mt={0.5}>
                     {formatCurrency(wallet?.balance || 0)}
                   </Typography>
-                  <Box display="flex" gap={3} mt={2}>
+                  <Box display="flex" gap={3} mt={2} flexWrap="wrap">
                     <Box>
                       <Typography variant="caption" color="text.secondary">Tổng đã nhận</Typography>
                       <Typography fontWeight={600}>{formatCurrency(wallet?.totalEarned || 0)}</Typography>
@@ -86,7 +86,7 @@ export default function CompanyWalletPage() {
                     </Box>
                   </Box>
                 </Box>
-                <Box display="flex" gap={1}>
+                <Box display="flex" gap={1} flexWrap="wrap">
                   <Button variant="outlined" size="small" startIcon={<AccountBalanceIcon />}
                     onClick={() => setBankOpen(true)}>
                     Ngân hàng
@@ -103,7 +103,7 @@ export default function CompanyWalletPage() {
 
         <Grid item xs={12} md={4}>
           <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ p: { xs: 2, md: 3 } }}>
               <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase" letterSpacing="0.05em">
                 Thông tin ngân hàng
               </Typography>
@@ -124,11 +124,11 @@ export default function CompanyWalletPage() {
       {/* Transaction history */}
       <Card>
         <CardContent sx={{ p: 0 }}>
-          <Box px={3} py={2} borderBottom="1px solid" borderColor="divider">
+          <Box px={{ xs: 2, md: 3 }} py={2} borderBottom="1px solid" borderColor="divider">
             <Typography fontWeight={600}>Lịch sử giao dịch</Typography>
           </Box>
-          <TableContainer>
-            <Table>
+          <TableContainer sx={{ overflowX: 'auto' }}>
+            <Table sx={{ minWidth: 760 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Mô tả</TableCell>

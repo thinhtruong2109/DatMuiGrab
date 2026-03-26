@@ -51,10 +51,10 @@ export default function AdminAppealsPage() {
   if (loading) return <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader title="Kháng cáo" subtitle="Xem xét và xử lý kháng cáo tài xế" />
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile sx={{ mb: 3 }}>
         <Tab label={`Chờ xử lý (${pending.length})`}
           iconPosition="end"
           icon={pending.length > 0 ? <Chip label={pending.length} size="small" color="warning" sx={{ height: 20 }} /> : undefined}
@@ -68,8 +68,8 @@ export default function AdminAppealsPage() {
         <Box display="flex" flexDirection="column" gap={2}>
           {displayList.map((appeal) => (
             <Card key={appeal.id}>
-              <CardContent sx={{ p: 3 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'flex-start' }} gap={1} mb={2}>
                   <Box>
                     <Typography fontWeight={700}>{appeal.driverName}</Typography>
                     <Typography variant="caption" color="text.secondary">
@@ -92,7 +92,7 @@ export default function AdminAppealsPage() {
                 )}
 
                 {appeal.status === 'PENDING' && (
-                  <Box display="flex" gap={1}>
+                  <Box display="flex" gap={1} flexWrap="wrap">
                     <Button
                       variant="contained" color="success" size="small" startIcon={<CheckIcon />}
                       onClick={() => setResolveDialog({ open: true, id: appeal.id, type: 'APPROVED' })}

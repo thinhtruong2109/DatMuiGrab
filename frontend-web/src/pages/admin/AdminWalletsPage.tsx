@@ -33,18 +33,18 @@ export default function AdminWalletsPage() {
   }
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader title="Tra cứu ví công ty" subtitle="Dùng API admin để xem thông tin ví theo companyId" />
 
       <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
           <Box display="flex" gap={1.5} alignItems="center" flexWrap="wrap">
             <TextField
               label="Company ID"
               size="small"
               value={companyId}
               onChange={(e) => setCompanyId(e.target.value)}
-              sx={{ minWidth: 360 }}
+              sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { xs: 0, sm: 360 } }}
             />
             <Button variant="contained" onClick={handleLookup} disabled={loading}>
               {loading ? 'Đang tra cứu...' : 'Tra cứu'}
@@ -55,8 +55,8 @@ export default function AdminWalletsPage() {
       </Card>
 
       {wallet && (
-        <TableContainer component={Card}>
-          <Table>
+        <TableContainer component={Card} sx={{ overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 520 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Trường</TableCell>

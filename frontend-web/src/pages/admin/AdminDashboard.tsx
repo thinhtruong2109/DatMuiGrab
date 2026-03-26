@@ -29,7 +29,7 @@ export default function AdminDashboard() {
   if (loading) return <Box display="flex" justifyContent="center" py={8}><CircularProgress /></Box>
 
   return (
-    <Box p={3}>
+    <Box p={{ xs: 2, md: 3 }}>
       <PageHeader title="Tổng quan hệ thống" subtitle="Quản trị Đất Mũi Grab" />
 
       <Grid container spacing={2} mb={3}>
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent sx={{ p: 0 }}>
-              <Box px={3} py={2} borderBottom="1px solid" borderColor="divider" display="flex" justifyContent="space-between">
+              <Box px={{ xs: 2, md: 3 }} py={2} borderBottom="1px solid" borderColor="divider" display="flex" justifyContent="space-between" alignItems="center" gap={1}>
                 <Typography fontWeight={600}>Công ty chờ duyệt</Typography>
                 {pending > 0 && <Chip label={pending} size="small" color="warning" />}
               </Box>
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
               ) : (
                 companies.filter((c) => c.status === 'PENDING').map((c, i, arr) => (
                   <Box key={c.id}>
-                    <Box px={3} py={2} display="flex" justifyContent="space-between" alignItems="center">
+                    <Box px={{ xs: 2, md: 3 }} py={2} display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={1}>
                       <Box>
                         <Typography fontWeight={500} fontSize={14}>{c.companyName}</Typography>
                         <Typography variant="caption" color="text.secondary">{formatDate(c.createdAt)}</Typography>
@@ -82,7 +82,7 @@ export default function AdminDashboard() {
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent sx={{ p: 0 }}>
-              <Box px={3} py={2} borderBottom="1px solid" borderColor="divider" display="flex" justifyContent="space-between">
+              <Box px={{ xs: 2, md: 3 }} py={2} borderBottom="1px solid" borderColor="divider" display="flex" justifyContent="space-between" alignItems="center" gap={1}>
                 <Typography fontWeight={600}>Kháng cáo chờ xử lý</Typography>
                 {pendingAppeals > 0 && <Chip label={pendingAppeals} size="small" color="error" />}
               </Box>
@@ -93,7 +93,7 @@ export default function AdminDashboard() {
               ) : (
                 appeals.filter((a) => a.status === 'PENDING').slice(0, 5).map((a, i, arr) => (
                   <Box key={a.id}>
-                    <Box px={3} py={2}>
+                    <Box px={{ xs: 2, md: 3 }} py={2}>
                       <Typography fontWeight={500} fontSize={14}>{a.driverName}</Typography>
                       <Typography variant="body2" color="text.secondary" noWrap>{a.reason}</Typography>
                       <Typography variant="caption" color="text.secondary">{formatDate(a.createdAt)}</Typography>
