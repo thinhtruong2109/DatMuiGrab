@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Box, Card, CardContent, Typography, Switch, FormControlLabel,
   Chip, Avatar, Divider, CircularProgress, Grid,
@@ -21,7 +21,21 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
   const { coords } = useGeolocation(true)
-  const { send } = useWebSocket()
+  const coordsRef = useRef<[number, number] | null>(null)
+  const onlineStatusRef = useRef<string>('OFFLINE')
+  const sendLocationRef = useRef<() => void>(() => {})
+
+  const { send } = useWebSocket({
+    onConnect: () => {
+      sendLocationRef.current()
+    },
+  })
+
+  const sendLocation = useCallback(() => {
+    const latestCoords = coordsRef.current
+    if (!latestCoords || onlineStatusRef.current !== 'ONLINE') return
+    send('/app/location/broadcast', { lat: latestCoords[0], lng: latestCoords[1] })
+  }, [send])
 
   useEffect(() => {
     Promise.all([
@@ -33,14 +47,27 @@ export default function DriverDashboard() {
     }).finally(() => setLoading(false))
   }, [])
 
+  useEffect(() => {
+    coordsRef.current = coords
+  }, [coords])
+
+  useEffect(() => {
+    onlineStatusRef.current = driver?.onlineStatus || 'OFFLINE'
+  }, [driver?.onlineStatus])
+
+  useEffect(() => {
+    sendLocationRef.current = sendLocation
+  }, [sendLocation])
+
   // Send location every 3s when online
   useEffect(() => {
-    if (!driver || driver.onlineStatus !== 'ONLINE' || !coords) return
+    if (!driver || driver.onlineStatus !== 'ONLINE') return
+    sendLocation()
     const interval = setInterval(() => {
-      send('/app/location/broadcast', { lat: coords[0], lng: coords[1] })
+      sendLocation()
     }, 3000)
     return () => clearInterval(interval)
-  }, [driver?.onlineStatus, coords])
+  }, [driver?.onlineStatus, sendLocation])
 
   const handleToggleOnline = async () => {
     if (!driver) return

@@ -19,10 +19,13 @@ interface WebSocketRuntimeState {
   accessToken: string | null
   consumerCount: number
   subscriptions: PendingSubscription[]
+  outboundQueue: Array<{ destination: string; body: string }>
   nextSubscriptionId: number
   connectListeners: Set<() => void>
   disconnectListeners: Set<() => void>
 }
+
+const MAX_OUTBOUND_QUEUE_SIZE = 200
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || '/api'
 const apiBaseUrlNoTrailingSlash = apiBaseUrl.replace(/\/$/, '')
@@ -54,6 +57,7 @@ const runtimeState: WebSocketRuntimeState = {
   accessToken: null,
   consumerCount: 0,
   subscriptions: [],
+  outboundQueue: [],
   nextSubscriptionId: 0,
   connectListeners: new Set(),
   disconnectListeners: new Set(),
@@ -82,6 +86,33 @@ const activatePendingSubscriptions = () => {
   })
 }
 
+const flushOutboundQueue = () => {
+  const client = runtimeState.client
+  if (!client?.connected || runtimeState.outboundQueue.length === 0) return
+
+  while (runtimeState.outboundQueue.length > 0) {
+    const item = runtimeState.outboundQueue.shift()
+    if (!item) break
+    client.publish({
+      destination: item.destination,
+      body: item.body,
+    })
+  }
+}
+
+const publishOrQueue = (destination: string, body: string) => {
+  const client = runtimeState.client
+  if (client?.connected) {
+    client.publish({ destination, body })
+    return
+  }
+
+  runtimeState.outboundQueue.push({ destination, body })
+  if (runtimeState.outboundQueue.length > MAX_OUTBOUND_QUEUE_SIZE) {
+    runtimeState.outboundQueue.shift()
+  }
+}
+
 const deactivateClient = () => {
   runtimeState.subscriptions.forEach((sub) => {
     sub.unsubscribe?.()
@@ -106,11 +137,17 @@ const ensureClient = (accessToken?: string | null) => {
     brokerURL: webSocketEndpoint,
     connectHeaders: { Authorization: `Bearer ${accessToken}` },
     reconnectDelay: 3000,
+    heartbeatIncoming: 10000,
+    heartbeatOutgoing: 10000,
     onConnect: () => {
       activatePendingSubscriptions()
+      flushOutboundQueue()
       runtimeState.connectListeners.forEach((listener) => listener())
     },
     onDisconnect: () => {
+      runtimeState.disconnectListeners.forEach((listener) => listener())
+    },
+    onWebSocketClose: () => {
       runtimeState.disconnectListeners.forEach((listener) => listener())
     },
   })
@@ -168,10 +205,7 @@ export function useWebSocket(options?: UseWebSocketOptions) {
   }, [])
 
   const send = useCallback((destination: string, body: object) => {
-    clientRef.current?.publish({
-      destination,
-      body: JSON.stringify(body),
-    })
+    publishOrQueue(destination, JSON.stringify(body))
   }, [])
 
   return { subscribe, send, client: clientRef }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Box, Card, CardContent, Typography, Button, Chip,
   Divider, Alert, IconButton, TextField, CircularProgress,
@@ -125,11 +125,38 @@ export default function DriverRidePage() {
   const { messages, addMessage, setMessages, clearMessages } = useChatStore()
   const { user } = useAuthStore()
   const { coords, error: geoError, loading: geoLoading, requestLocation } = useGeolocation(true)
-  const { subscribe, send } = useWebSocket()
+  const coordsRef = useRef<[number, number] | null>(null)
+  const currentRideRef = useRef<Ride | null>(null)
+  const sendLocationRef = useRef<() => void>(() => {})
+  const { subscribe, send } = useWebSocket({
+    onConnect: () => {
+      sendLocationRef.current()
+    },
+  })
   const [message, setMessage] = useState('')
   const [updating, setUpdating] = useState(false)
   const [activeRoutePoints, setActiveRoutePoints] = useState<[number, number][]>([])
   const [activeRouteDistanceKm, setActiveRouteDistanceKm] = useState<number | null>(null)
+
+  const sendRideLocation = useCallback(() => {
+    const latestRide = currentRideRef.current
+    const latestCoords = coordsRef.current
+    if (!latestRide || !latestCoords) return
+    if (latestRide.status === 'COMPLETED' || latestRide.status === 'CANCELLED') return
+    send(`/app/location/${latestRide.id}`, { lat: latestCoords[0], lng: latestCoords[1] })
+  }, [send])
+
+  useEffect(() => {
+    coordsRef.current = coords
+  }, [coords])
+
+  useEffect(() => {
+    currentRideRef.current = currentRide
+  }, [currentRide])
+
+  useEffect(() => {
+    sendLocationRef.current = sendRideLocation
+  }, [sendRideLocation])
 
   useEffect(() => {
     if (!currentRide) return
@@ -149,11 +176,12 @@ export default function DriverRidePage() {
   // Send location while in ride
   useEffect(() => {
     if (!currentRide || !coords || currentRide.status === 'COMPLETED' || currentRide.status === 'CANCELLED') return
+    sendRideLocation()
     const interval = setInterval(() => {
-      send(`/app/location/${currentRide.id}`, { lat: coords[0], lng: coords[1] })
+      sendRideLocation()
     }, 3000)
     return () => clearInterval(interval)
-  }, [currentRide?.id, currentRide?.status, coords])
+  }, [currentRide?.id, currentRide?.status, coords, sendRideLocation])
 
   useEffect(() => {
     if (!currentRide) {
