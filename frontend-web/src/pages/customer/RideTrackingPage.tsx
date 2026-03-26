@@ -143,6 +143,7 @@ export default function RideTrackingPage() {
   const [searchingSecondsLeft, setSearchingSecondsLeft] = useState(SEARCH_TIMEOUT_SECONDS)
   const [searchTimeoutNotice, setSearchTimeoutNotice] = useState('')
   const timeoutCancellationTriggeredRef = useRef(false)
+  const searchingStartedAtRef = useRef<number | null>(null)
 
   const { subscribe, send } = useWebSocket()
 
@@ -172,6 +173,10 @@ export default function RideTrackingPage() {
   // Load ride
   useEffect(() => {
     if (!rideId) return
+    timeoutCancellationTriggeredRef.current = false
+    searchingStartedAtRef.current = null
+    setSearchingSecondsLeft(SEARCH_TIMEOUT_SECONDS)
+    setSearchTimeoutNotice('')
     clearMessages()
     rideApi.getById(rideId).then(setRide)
     chatService.getMessagesByRide(rideId).then(setMessages).catch(() => {})
@@ -247,6 +252,8 @@ export default function RideTrackingPage() {
     if (!ride) return
 
     if (ride.status !== 'SEARCHING') {
+      searchingStartedAtRef.current = null
+      timeoutCancellationTriggeredRef.current = false
       setSearchingSecondsLeft(SEARCH_TIMEOUT_SECONDS)
       if (ride.status !== 'CANCELLED') {
         setSearchTimeoutNotice('')
@@ -254,9 +261,12 @@ export default function RideTrackingPage() {
       return
     }
 
-    const createdAtTime = new Date(ride.createdAt).getTime()
-    const startedAt = Number.isNaN(createdAtTime) ? Date.now() : createdAtTime
-    const deadline = startedAt + SEARCH_TIMEOUT_SECONDS * 1000
+    if (searchingStartedAtRef.current === null) {
+      searchingStartedAtRef.current = Date.now()
+      timeoutCancellationTriggeredRef.current = false
+    }
+
+    const deadline = searchingStartedAtRef.current + SEARCH_TIMEOUT_SECONDS * 1000
 
     const updateCountdown = () => {
       const remainingMs = deadline - Date.now()

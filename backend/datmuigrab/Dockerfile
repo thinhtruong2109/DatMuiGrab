@@ -9,8 +9,9 @@ RUN JAR_PATH=$(find target -maxdepth 1 -type f -name "*.jar" ! -name "*.original
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
+ENV TZ=Asia/Ho_Chi_Minh
 
 COPY --from=build /app/app.jar ./app.jar
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Ho_Chi_Minh", "-jar", "/app/app.jar"]
