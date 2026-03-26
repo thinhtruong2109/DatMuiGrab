@@ -37,7 +37,7 @@ public class RedisService {
         redisTemplate.opsForValue().set(
                 "driver:location:" + driverId,
                 lat + "," + lng,
-                Duration.ofSeconds(30)
+                Duration.ofSeconds(120)
         );
         redisTemplate.opsForGeo().add(GEO_KEY, new Point(lng, lat), driverId);
     }

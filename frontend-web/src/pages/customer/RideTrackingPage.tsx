@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Box, Card, CardContent, Typography, Chip, Avatar,
   Button, TextField, IconButton, Divider, CircularProgress,
-  Rating as MuiRating, Dialog, DialogContent, DialogTitle, DialogActions,
+  Rating as MuiRating, Dialog, DialogContent, DialogTitle, DialogActions, Alert,
 } from '@mui/material'
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
@@ -23,6 +23,8 @@ import { useRideStore } from '@/store/rideStore'
 import { useAuthStore } from '@/store/authStore'
 import { formatCurrency, rideStatusLabel, rideStatusColor } from '@/utils/format'
 import type { Ride, LocationPayload } from '@/types'
+
+const SEARCH_TIMEOUT_SECONDS = 120
 
 const driverIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
@@ -138,8 +140,34 @@ export default function RideTrackingPage() {
   )
   const [activeRoutePoints, setActiveRoutePoints] = useState<[number, number][]>([])
   const [activeRouteDistanceKm, setActiveRouteDistanceKm] = useState<number | null>(null)
+  const [searchingSecondsLeft, setSearchingSecondsLeft] = useState(SEARCH_TIMEOUT_SECONDS)
+  const [searchTimeoutNotice, setSearchTimeoutNotice] = useState('')
+  const timeoutCancellationTriggeredRef = useRef(false)
 
   const { subscribe, send } = useWebSocket()
+
+  const handleSearchTimeout = useCallback(async () => {
+    if (!ride || timeoutCancellationTriggeredRef.current) return
+
+    timeoutCancellationTriggeredRef.current = true
+    const timeoutReason = 'Không có tài xế nhận cuốc trong 2 phút'
+
+    try {
+      const updatedRide = await rideApi.cancel(ride.id, timeoutReason)
+      setRide(updatedRide)
+    } catch {
+      setRide((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          status: 'CANCELLED',
+          cancelReason: timeoutReason,
+        }
+      })
+    } finally {
+      setSearchTimeoutNotice(`${timeoutReason}. Yêu cầu tìm xe đã được hủy.`)
+    }
+  }, [ride])
 
   // Load ride
   useEffect(() => {
@@ -214,6 +242,40 @@ export default function RideTrackingPage() {
       cancelled = true
     }
   }, [ride, driverPos])
+
+  useEffect(() => {
+    if (!ride) return
+
+    if (ride.status !== 'SEARCHING') {
+      setSearchingSecondsLeft(SEARCH_TIMEOUT_SECONDS)
+      if (ride.status !== 'CANCELLED') {
+        setSearchTimeoutNotice('')
+      }
+      return
+    }
+
+    const createdAtTime = new Date(ride.createdAt).getTime()
+    const startedAt = Number.isNaN(createdAtTime) ? Date.now() : createdAtTime
+    const deadline = startedAt + SEARCH_TIMEOUT_SECONDS * 1000
+
+    const updateCountdown = () => {
+      const remainingMs = deadline - Date.now()
+      const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000))
+      setSearchingSecondsLeft(remainingSeconds)
+
+      if (remainingMs <= 0 && !timeoutCancellationTriggeredRef.current) {
+        void handleSearchTimeout()
+      }
+    }
+
+    updateCountdown()
+    const intervalId = window.setInterval(updateCountdown, 1000)
+    return () => window.clearInterval(intervalId)
+  }, [ride, handleSearchTimeout])
+
+  const countdownLabel = `${Math.floor(searchingSecondsLeft / 60)}:${(searchingSecondsLeft % 60)
+    .toString()
+    .padStart(2, '0')}`
 
   const handleSendMessage = () => {
     if (!message.trim() || !rideId) return
@@ -323,7 +385,14 @@ export default function RideTrackingPage() {
             <Box mt={3} textAlign="center">
               <CircularProgress size={32} sx={{ mb: 1 }} />
               <Typography variant="body2" color="text.secondary">Đang tìm tài xế...</Typography>
+              <Typography variant="caption" color="text.secondary">Thời gian còn lại: {countdownLabel}</Typography>
             </Box>
+          )}
+
+          {searchTimeoutNotice && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              {searchTimeoutNotice}
+            </Alert>
           )}
 
           {['SEARCHING', 'MATCHED', 'DRIVER_ARRIVING'].includes(ride.status) && (
